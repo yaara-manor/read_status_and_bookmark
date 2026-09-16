@@ -24,5 +24,15 @@
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}/frontend"
         },
+        {
+            "name": "Backend",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fastapi",
+            "args": ["dev"],
+            "cwd": "${workspaceFolder}/backend",
+            "envFile": "${workspaceFolder}/.env",
+            "jinja": true
+        }
     ]
 }
