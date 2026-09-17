@@ -8,6 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import useAuth from "@/hooks/useAuth"
 import DeleteItem from "../Items/DeleteItem"
 import EditItem from "../Items/EditItem"
 
@@ -16,7 +17,12 @@ interface ItemActionsMenuProps {
 }
 
 export const ItemActionsMenu = ({ item }: ItemActionsMenuProps) => {
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
+
+  if (!user || (item.owner_id !== user.id && !user.is_superuser)) {
+    return null
+  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

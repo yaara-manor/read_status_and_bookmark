@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm import selectinload
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep
@@ -12,50 +13,33 @@ router = APIRouter(prefix="/items", tags=["items"])
 
 @router.get("/", response_model=ItemsPublic)
 def read_items(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve items.
     """
-
-    if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Item)
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Item).order_by(col(Item.created_at).desc()).offset(skip).limit(limit)
-        )
-        items = session.exec(statement).all()
-    else:
-        count_statement = (
-            select(func.count())
-            .select_from(Item)
-            .where(Item.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Item)
-            .where(Item.owner_id == current_user.id)
-            .order_by(col(Item.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        items = session.exec(statement).all()
-
-    items_public = [ItemPublic.model_validate(item) for item in items]
+    count = session.exec(select(func.count()).select_from(Item)).one()
+    statement = (
+        select(Item)
+        .options(selectinload(Item.owner))
+        .order_by(col(Item.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    items = session.exec(statement).all()
+    items_public = [ItemPublic.from_item(item) for item in items]
     return ItemsPublic(data=items_public, count=count)
 
 
 @router.get("/{id}", response_model=ItemPublic)
-def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_item(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Get item by ID.
     """
     item = session.get(Item, id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if not current_user.is_superuser and (item.owner_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    return item
+    return ItemPublic.from_item(item)
 
 
 @router.post("/", response_model=ItemPublic)
@@ -69,7 +53,7 @@ def create_item(
     session.add(item)
     session.commit()
     session.refresh(item)
-    return item
+    return ItemPublic.from_item(item)
 
 
 @router.put("/{id}", response_model=ItemPublic)
@@ -93,7 +77,7 @@ def update_item(
     session.add(item)
     session.commit()
     session.refresh(item)
-    return item
+    return ItemPublic.from_item(item)
 
 
 @router.delete("/{id}")

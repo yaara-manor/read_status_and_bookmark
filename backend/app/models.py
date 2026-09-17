@@ -105,6 +105,13 @@ class ItemPublic(ItemBase):
     id: uuid.UUID
     owner_id: uuid.UUID
     created_at: datetime | None = None
+    creator: str
+
+    @classmethod
+    def from_item(cls, item: Item) -> ItemPublic:
+        owner = item.owner
+        creator = (owner.full_name or owner.email) if owner else ""
+        return cls.model_validate(item, update={"creator": creator})
 
 
 class ItemsPublic(SQLModel):

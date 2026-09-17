@@ -6,7 +6,7 @@ import {
   randomItemTitle,
   randomPassword,
 } from "./utils/random"
-import { logInUser } from "./utils/user"
+import { logInUser, logOutUser } from "./utils/user"
 
 test("Items page is accessible and shows correct title", async ({ page }) => {
   await page.goto("/items")
@@ -115,6 +115,35 @@ test.describe("Items management", () => {
   })
 })
 
+test.describe("Shared items", () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test("other user sees item and creator but not actions", async ({ page }) => {
+    const password = randomPassword()
+    const emailA = randomEmail()
+    const emailB = randomEmail()
+    await createUser({ email: emailA, password })
+    await createUser({ email: emailB, password })
+
+    await logInUser(page, emailA, password)
+    await page.goto("/items")
+    const title = randomItemTitle()
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    await logOutUser(page)
+    await logInUser(page, emailB, password)
+    await page.goto("/items")
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    await expect(itemRow).toBeVisible()
+    await expect(itemRow.getByText("Test User")).toBeVisible()
+    await expect(itemRow.getByRole("button")).toHaveCount(1)
+  })
+})
+
 test.describe("Items empty state", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -126,7 +155,6 @@ test.describe("Items empty state", () => {
 
     await page.goto("/items")
 
-    await expect(page.getByText("You don't have any items yet")).toBeVisible()
-    await expect(page.getByText("Add a new item to get started")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
   })
 })

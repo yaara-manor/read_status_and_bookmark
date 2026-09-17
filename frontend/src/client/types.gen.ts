@@ -82,6 +82,10 @@ export type ItemPublic = {
      * Created At
      */
     created_at?: string | null;
+    /**
+     * Creator
+     */
+    creator: string;
 };
 
 /**

@@ -62,6 +62,13 @@ export const columns: ColumnDef<ItemPublic>[] = [
     },
   },
   {
+    accessorKey: "creator",
+    header: "Creator",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.creator}</span>
+    ),
+  },
+  {
     id: "actions",
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (

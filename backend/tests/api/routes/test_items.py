@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.models import User
 from tests.utils.item import create_random_item
 
 
@@ -52,7 +53,7 @@ def test_read_item_not_found(
     assert content["detail"] == "Item not found"
 
 
-def test_read_item_not_enough_permissions(
+def test_read_item_other_user_ok(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:
     item = create_random_item(db)
@@ -60,9 +61,12 @@ def test_read_item_not_enough_permissions(
         f"{settings.API_V1_STR}/items/{item.id}",
         headers=normal_user_token_headers,
     )
-    assert response.status_code == 403
+    assert response.status_code == 200
     content = response.json()
-    assert content["detail"] == "Not enough permissions"
+    assert content["title"] == item.title
+    assert content["description"] == item.description
+    assert content["id"] == str(item.id)
+    assert content["owner_id"] == str(item.owner_id)
 
 
 def test_read_items(
@@ -77,6 +81,34 @@ def test_read_items(
     assert response.status_code == 200
     content = response.json()
     assert len(content["data"]) >= 2
+
+
+def test_read_items_includes_other_users_item(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    response = client.get(
+        f"{settings.API_V1_STR}/items/",
+        headers=normal_user_token_headers,
+    )
+    assert response.status_code == 200
+    content = response.json()
+    ids = {row["id"] for row in content["data"]}
+    assert str(item.id) in ids
+
+
+def test_read_item_includes_creator_name(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    owner = item.owner or db.get(User, item.owner_id)
+    assert owner is not None
+    response = client.get(
+        f"{settings.API_V1_STR}/items/{item.id}",
+        headers=normal_user_token_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["creator"] == owner.email
 
 
 def test_update_item(
