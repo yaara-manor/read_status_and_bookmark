@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Search } from "lucide-react"
 import { Suspense } from "react"
 
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_layout/items")({
 
 function ItemsTableContent() {
   const { data: items } = useSuspenseQuery(getItemsQueryOptions())
+  const navigate = useNavigate()
 
   if (items.data.length === 0) {
     return (
@@ -43,7 +44,15 @@ function ItemsTableContent() {
     )
   }
 
-  return <DataTable columns={columns} data={items.data} />
+  return (
+    <DataTable
+      columns={columns}
+      data={items.data}
+      onRowClick={(item) =>
+        navigate({ to: "/items/$itemId", params: { itemId: item.id } })
+      }
+    />
+  )
 }
 
 function ItemsTable() {

@@ -18,7 +18,10 @@ function CopyId({ id }: { id: string }) {
         variant="ghost"
         size="icon"
         className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => copy(id)}
+        onClick={(e) => {
+          e.stopPropagation()
+          copy(id)
+        }}
       >
         {isCopied ? (
           <Check className="size-3 text-green-500" />
@@ -72,7 +75,10 @@ export const columns: ColumnDef<ItemPublic>[] = [
     id: "actions",
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
-      <div className="flex justify-end">
+      <div
+        className="flex justify-end"
+        onClick={(e) => e.stopPropagation()}
+      >
         <ItemActionsMenu item={row.original} />
       </div>
     ),

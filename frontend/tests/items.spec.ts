@@ -74,6 +74,59 @@ test.describe("Items management", () => {
     await expect(page.getByText("Title is required")).toBeVisible()
   })
 
+  test("clicking a row opens the item page", async ({ page }) => {
+    const title = randomItemTitle()
+    const description = randomItemDescription()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByLabel("Description").fill(description)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    const id = (await itemRow.locator(".font-mono").innerText()).trim()
+    await itemRow.getByText(title).click()
+
+    await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+    await expect(page.getByRole("heading", { name: title })).toBeVisible()
+    await expect(page.getByText(description)).toBeVisible()
+    await expect(page.getByText(id, { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole("definition").filter({ hasText: "Test User" }),
+    ).toBeVisible()
+  })
+
+  test("Copy ID does not open the item page", async ({ page }) => {
+    const title = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    await itemRow.getByRole("button", { name: "Copy ID" }).click()
+
+    await expect(page).toHaveURL(/\/items$/)
+    await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  })
+
+  test("row actions menu does not open the item page", async ({ page }) => {
+    const title = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    await itemRow.getByRole("button").last().click()
+
+    await expect(page.getByRole("menuitem", { name: "Edit Item" })).toBeVisible()
+    await expect(page).toHaveURL(/\/items$/)
+  })
+
   test.describe("Edit and Delete", () => {
     let itemTitle: string
 
