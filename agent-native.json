@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "apps": {
+    "visualize-repo": {
+      "mode": "local-files",
+      "root": ".agent-native/visual-docs",
+      "entry": ".agent-native/visual-docs/repo-overview",
+      "targets": [
+        {
+          "id": "backend-app-models-py",
+          "name": "Models.Py",
+          "kind": "area",
+          "include": [
+            "backend/app/models.py"
+          ],
+          "blocks": [
+            "file-tree",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "backend-app-api-routes-login-py",
+          "name": "Login.Py",
+          "kind": "flow",
+          "include": [
+            "backend/app/api/routes/login.py"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "backend-app-api-routes-items-py",
+          "name": "Items.Py",
+          "kind": "flow",
+          "include": [
+            "backend/app/api/routes/items.py"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "backend-app-api-routes-users-py",
+          "name": "Users.Py",
+          "kind": "flow",
+          "include": [
+            "backend/app/api/routes/users.py"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "frontend-src-routes-login-tsx",
+          "name": "Login",
+          "kind": "flow",
+          "include": [
+            "frontend/src/routes/login.tsx"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "frontend-src-routes-_layout-items-tsx",
+          "name": "Items",
+          "kind": "flow",
+          "include": [
+            "frontend/src/routes/_layout/items.tsx"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "frontend-src-routes-_layout-admin-tsx",
+          "name": "Admin",
+          "kind": "flow",
+          "include": [
+            "frontend/src/routes/_layout/admin.tsx"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "frontend-src-routes-_layout-settings-tsx",
+          "name": "Settings",
+          "kind": "flow",
+          "include": [
+            "frontend/src/routes/_layout/settings.tsx"
+          ],
+          "blocks": [
+            "wireframe",
+            "diagram",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        },
+        {
+          "id": "frontend-src-components-sidebar-appsidebar-tsx",
+          "name": "AppSidebar",
+          "kind": "component",
+          "include": [
+            "frontend/src/components/Sidebar/AppSidebar.tsx"
+          ],
+          "blocks": [
+            "wireframe",
+            "states",
+            "annotated-code"
+          ],
+          "policy": "seed"
+        }
+      ],
+      "hide": [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.agent-native/**"
+      ]
+    }
+  }
+}
