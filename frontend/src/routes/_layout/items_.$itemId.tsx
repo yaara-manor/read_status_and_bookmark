@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { toast } from "sonner"
 
 import { ItemsService } from "@/client"
+import { ItemActionsMenu } from "@/components/Items/ItemActionsMenu"
 
 export const Route = createFileRoute("/_layout/items_/$itemId")({
   component: ItemPage,
@@ -49,11 +50,17 @@ function ItemPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
-        <p className="text-muted-foreground">
-          {item.description || "No description"}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
+          <p className="text-muted-foreground">
+            {item.description || "No description"}
+          </p>
+        </div>
+        <ItemActionsMenu
+          item={item}
+          onDeleted={() => navigate({ to: "/items" })}
+        />
       </div>
       <dl className="grid gap-4 text-sm">
         <div>

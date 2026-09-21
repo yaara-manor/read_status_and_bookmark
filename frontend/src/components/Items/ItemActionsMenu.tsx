@@ -14,9 +14,10 @@ import EditItem from "../Items/EditItem"
 
 interface ItemActionsMenuProps {
   item: ItemPublic
+  onDeleted?: () => void
 }
 
-export const ItemActionsMenu = ({ item }: ItemActionsMenuProps) => {
+export const ItemActionsMenu = ({ item, onDeleted }: ItemActionsMenuProps) => {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
 
@@ -33,7 +34,13 @@ export const ItemActionsMenu = ({ item }: ItemActionsMenuProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <EditItem item={item} onSuccess={() => setOpen(false)} />
-        <DeleteItem id={item.id} onSuccess={() => setOpen(false)} />
+        <DeleteItem
+          id={item.id}
+          onSuccess={() => {
+            setOpen(false)
+            onDeleted?.()
+          }}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

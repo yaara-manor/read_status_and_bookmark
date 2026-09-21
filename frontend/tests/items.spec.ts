@@ -177,6 +177,42 @@ test.describe("Items management", () => {
       ).toBeVisible()
       await expect(page.getByText(itemTitle)).not.toBeVisible()
     })
+
+    test("Edit an item from the item page", async ({ page }) => {
+      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
+      const id = (await itemRow.locator(".font-mono").innerText()).trim()
+      await itemRow.getByText(itemTitle).click()
+      await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+
+      await page.locator("main .mx-auto").getByRole("button").click()
+      await page.getByRole("menuitem", { name: "Edit Item" }).click()
+
+      const updatedTitle = randomItemTitle()
+      await page.getByLabel("Title").fill(updatedTitle)
+      await page.getByRole("button", { name: "Save" }).click()
+
+      await expect(page.getByText("Item updated successfully")).toBeVisible()
+      await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+      await expect(
+        page.getByRole("heading", { name: updatedTitle }),
+      ).toBeVisible()
+    })
+
+    test("Delete an item from the item page", async ({ page }) => {
+      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
+      await itemRow.getByText(itemTitle).click()
+
+      await page.locator("main .mx-auto").getByRole("button").click()
+      await page.getByRole("menuitem", { name: "Delete Item" }).click()
+      await page.getByRole("button", { name: "Delete" }).click()
+
+      await expect(
+        page.getByText("The item was deleted successfully"),
+      ).toBeVisible()
+      await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+      await expect(page.getByText(itemTitle)).not.toBeVisible()
+      await expect(page.getByText("Item not found")).not.toBeVisible()
+    })
   })
 })
 
@@ -206,6 +242,15 @@ test.describe("Shared items", () => {
     await expect(itemRow).toBeVisible()
     await expect(itemRow.getByText("Test User")).toBeVisible()
     await expect(itemRow.getByRole("button")).toHaveCount(1)
+
+    await itemRow.getByText(title).click()
+    await expect(page.getByRole("heading", { name: title })).toBeVisible()
+    await expect(
+      page.getByRole("definition").filter({ hasText: "Test User" }),
+    ).toBeVisible()
+    await expect(page.locator("main .mx-auto").getByRole("button")).toHaveCount(
+      0,
+    )
   })
 })
 
