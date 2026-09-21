@@ -8,7 +8,8 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password
-from app.models import User, UserCreate
+from app.models import Event, Ticket, TicketAvailability, User, UserCreate
+from tests.utils.event import create_random_event
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
@@ -530,3 +531,45 @@ def test_delete_user_without_privileges(
     )
     assert r.status_code == 403
     assert r.json()["detail"] == "The user doesn't have enough privileges"
+
+
+def test_delete_user_deletes_owned_events(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    event = create_random_event(db)
+    owner_id = event.owner_id
+    event_id = event.id
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{owner_id}",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 200
+    db.expire_all()
+    assert db.get(Event, event_id) is None
+    tickets = db.exec(select(Ticket).where(Ticket.event_id == event_id)).all()
+    assert tickets == []
+
+
+def test_delete_buyer_clears_ticket_user_id(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    event = create_random_event(db)
+    buyer = create_random_user(db)
+    ticket = db.exec(select(Ticket).where(Ticket.event_id == event.id)).one()
+    ticket.user_id = buyer.id
+    ticket.availability = TicketAvailability.BOOKED
+    db.add(ticket)
+    db.commit()
+    ticket_id = ticket.id
+    event_id = event.id
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{buyer.id}",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 200
+    db.expire_all()
+    assert db.get(Event, event_id) is not None
+    stored = db.get(Ticket, ticket_id)
+    assert stored is not None
+    assert stored.availability == TicketAvailability.BOOKED
+    assert stored.user_id is None

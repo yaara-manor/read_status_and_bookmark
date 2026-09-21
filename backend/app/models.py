@@ -1,8 +1,17 @@
 import uuid
 from datetime import UTC, datetime
+from enum import Enum
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    DateTime,
+    Integer,
+    UniqueConstraint,
+)
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -48,12 +57,21 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
-class ItemReadLink(SQLModel, table=True):
+class EventReadLink(SQLModel, table=True):
     user_id: uuid.UUID = Field(
         foreign_key="user.id", primary_key=True, ondelete="CASCADE"
     )
-    item_id: uuid.UUID = Field(
-        foreign_key="item.id", primary_key=True, ondelete="CASCADE"
+    event_id: uuid.UUID = Field(
+        foreign_key="event.id", primary_key=True, ondelete="CASCADE"
+    )
+
+
+class EventBookmarkLink(SQLModel, table=True):
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", primary_key=True, ondelete="CASCADE"
+    )
+    event_id: uuid.UUID = Field(
+        foreign_key="event.id", primary_key=True, ondelete="CASCADE"
     )
 
 
@@ -65,9 +83,12 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
-    read_items: list[Item] = Relationship(
-        back_populates="readers", link_model=ItemReadLink
+    events: list[Event] = Relationship(back_populates="owner", cascade_delete=True)
+    read_events: list[Event] = Relationship(
+        back_populates="readers", link_model=EventReadLink
+    )
+    bookmarked_events: list[Event] = Relationship(
+        back_populates="bookmarked_by", link_model=EventBookmarkLink
     )
 
 
@@ -82,56 +103,157 @@ class UsersPublic(SQLModel):
     count: int
 
 
-# Shared properties
-class ItemBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
+class PerformerGenre(str, Enum):
+    MUSIC = "MUSIC"
+    SPORT = "SPORT"
+    THEATRE = "THEATRE"
+    CIRCUS = "CIRCUS"
 
 
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    pass
+class TicketAvailability(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    BOOKED = "BOOKED"
 
 
-# Properties to receive on item update
-class ItemUpdate(SQLModel):
-    title: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
+class Venue(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    city: str = Field(max_length=255)
+    country: str = Field(max_length=255)
+    name: str = Field(max_length=255)
+    seat_map: list[int] = Field(sa_column=Column(ARRAY(Integer), nullable=False))
+    events: list[Event] = Relationship(back_populates="venue")
+
+
+class Performer(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=255)
+    genre: PerformerGenre = Field(
+        sa_column=Column(
+            SAEnum(PerformerGenre, name="performer_genre", native_enum=True),
+            nullable=False,
+        )
+    )
+    description: str | None = Field(default=None, max_length=255)
+    events: list[Event] = Relationship(back_populates="performer")
+
+
+class EventBase(SQLModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=255)
+
+
+class EventCreate(EventBase):
+    venue_id: uuid.UUID
+    performer_id: uuid.UUID
+    time: datetime
+    price: float = Field(ge=0)
+
+
+class EventUpdate(SQLModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=255)
+    time: datetime | None = None
+    performer_id: uuid.UUID | None = None
+
+
+class Event(EventBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    time: datetime = Field(sa_type=DateTime(timezone=True))  # type: ignore
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    venue_id: uuid.UUID = Field(foreign_key="venue.id", ondelete="RESTRICT")
+    performer_id: uuid.UUID = Field(foreign_key="performer.id", ondelete="RESTRICT")
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="items")
+    venue: Venue | None = Relationship(back_populates="events")
+    performer: Performer | None = Relationship(back_populates="events")
+    owner: User | None = Relationship(back_populates="events")
+    tickets: list[Ticket] = Relationship(back_populates="event", cascade_delete=True)
     readers: list[User] = Relationship(
-        back_populates="read_items", link_model=ItemReadLink
+        back_populates="read_events", link_model=EventReadLink
+    )
+    bookmarked_by: list[User] = Relationship(
+        back_populates="bookmarked_events", link_model=EventBookmarkLink
     )
 
 
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
+class Ticket(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("event_id", "row", "seat"),
+        CheckConstraint("price >= 0"),
+        CheckConstraint('"row" >= 0'),
+        CheckConstraint("seat >= 0"),
+    )
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_id: uuid.UUID = Field(foreign_key="event.id", ondelete="CASCADE")
+    user_id: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", ondelete="SET NULL"
+    )
+    row: int = Field(ge=0)
+    seat: int = Field(ge=0)
+    price: float = Field(ge=0)
+    availability: TicketAvailability = Field(
+        sa_column=Column(
+            SAEnum(TicketAvailability, name="ticket_availability", native_enum=True),
+            nullable=False,
+        )
+    )
+    event: Event | None = Relationship(back_populates="tickets")
+
+
+class TicketPublic(SQLModel):
+    id: uuid.UUID
+    row: int
+    seat: int
+    price: float
+    availability: TicketAvailability
+    user_id: uuid.UUID | None = None
+
+
+class EventPublic(EventBase):
     id: uuid.UUID
     owner_id: uuid.UUID
+    venue_id: uuid.UUID
+    performer_id: uuid.UUID
+    time: datetime
     created_at: datetime | None = None
     creator: str
     is_read: bool = False
+    is_bookmarked: bool = False
 
     @classmethod
-    def from_item(cls, item: Item, *, is_read: bool = False) -> ItemPublic:
-        owner = item.owner
+    def from_event(
+        cls,
+        event: Event,
+        *,
+        is_read: bool = False,
+        is_bookmarked: bool = False,
+    ) -> EventPublic:
+        owner = event.owner
         creator = (owner.full_name or owner.email) if owner else ""
-        return cls.model_validate(item, update={"creator": creator, "is_read": is_read})
+        return cls.model_validate(
+            event,
+            update={
+                "creator": creator,
+                "is_read": is_read,
+                "is_bookmarked": is_bookmarked,
+            },
+        )
 
 
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
+class EventDetail(EventPublic):
+    tickets: list[TicketPublic]
+
+
+class EventBookmarkUpdate(SQLModel):
+    is_bookmarked: bool
+
+
+class EventsPublic(SQLModel):
+    data: list[EventPublic]
     count: int
 
 
