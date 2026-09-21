@@ -19,6 +19,18 @@ test("Add Item button is visible", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Add Item" })).toBeVisible()
 })
 
+test("unknown item redirects to items with not found", async ({ page }) => {
+  await page.goto(`/items/${crypto.randomUUID()}`)
+  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  await expect(page.getByText("Item not found")).toBeVisible()
+})
+
+test("invalid item id redirects to items with not found", async ({ page }) => {
+  await page.goto("/items/not-a-uuid")
+  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  await expect(page.getByText("Item not found")).toBeVisible()
+})
+
 test.describe("Items management", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
   let email: string

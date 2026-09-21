@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { AxiosError } from "axios"
+import { useEffect } from "react"
+import { toast } from "sonner"
 
 import { ItemsService } from "@/client"
 
@@ -16,6 +19,7 @@ export const Route = createFileRoute("/_layout/items_/$itemId")({
 
 function ItemPage() {
   const { itemId } = Route.useParams()
+  const navigate = useNavigate()
   const { data: item, error, isPending } = useQuery({
     queryKey: ["items", itemId],
     queryFn: async () =>
@@ -23,7 +27,19 @@ function ItemPage() {
     retry: false,
   })
 
-  if (isPending) {
+  const isMissing =
+    error instanceof AxiosError &&
+    [404, 422].includes(error.response?.status ?? 0)
+
+  useEffect(() => {
+    if (!isMissing) {
+      return
+    }
+    toast.error("Item not found")
+    void navigate({ to: "/items" })
+  }, [isMissing, navigate])
+
+  if (isPending || isMissing) {
     return <p className="text-muted-foreground">Loading...</p>
   }
 
