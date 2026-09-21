@@ -183,8 +183,9 @@ test.describe("Items management", () => {
       const id = (await itemRow.locator(".font-mono").innerText()).trim()
       await itemRow.getByText(itemTitle).click()
       await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+      await expect(page.getByRole("heading", { name: itemTitle })).toBeVisible()
 
-      await page.locator("main .mx-auto").getByRole("button").click()
+      await page.getByRole("button", { name: "Item actions" }).click()
       await page.getByRole("menuitem", { name: "Edit Item" }).click()
 
       const updatedTitle = randomItemTitle()
@@ -201,8 +202,9 @@ test.describe("Items management", () => {
     test("Delete an item from the item page", async ({ page }) => {
       const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
       await itemRow.getByText(itemTitle).click()
+      await expect(page.getByRole("heading", { name: itemTitle })).toBeVisible()
 
-      await page.locator("main .mx-auto").getByRole("button").click()
+      await page.getByRole("button", { name: "Item actions" }).click()
       await page.getByRole("menuitem", { name: "Delete Item" }).click()
       await page.getByRole("button", { name: "Delete" }).click()
 
@@ -248,9 +250,9 @@ test.describe("Shared items", () => {
     await expect(
       page.getByRole("definition").filter({ hasText: "Test User" }),
     ).toBeVisible()
-    await expect(page.locator("main .mx-auto").getByRole("button")).toHaveCount(
-      0,
-    )
+    await expect(
+      page.getByRole("button", { name: "Item actions" }),
+    ).toHaveCount(0)
   })
 })
 

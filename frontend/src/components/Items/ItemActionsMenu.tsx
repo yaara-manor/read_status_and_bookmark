@@ -28,7 +28,7 @@ export const ItemActionsMenu = ({ item, onDeleted }: ItemActionsMenuProps) => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" aria-label="Item actions">
           <EllipsisVertical />
         </Button>
       </DropdownMenuTrigger>
