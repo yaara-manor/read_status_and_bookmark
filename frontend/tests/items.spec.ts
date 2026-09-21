@@ -86,6 +86,36 @@ test.describe("Items management", () => {
     await expect(page.getByText("Title is required")).toBeVisible()
   })
 
+  test("opening an item marks it read in the table", async ({ page }) => {
+    const unreadTitle = randomItemTitle()
+    const readTitle = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(unreadTitle)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(readTitle)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const unreadRow = page.getByRole("row").filter({ hasText: unreadTitle })
+    const readRow = page.getByRole("row").filter({ hasText: readTitle })
+    await expect(unreadRow.getByText("Unread")).toBeVisible()
+    await expect(readRow.getByText("Unread")).toBeVisible()
+
+    const id = (await readRow.locator(".font-mono").innerText()).trim()
+    await readRow.getByText(readTitle).click()
+    await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+    await expect(page.getByRole("heading", { name: readTitle })).toBeVisible()
+
+    await page.goto("/items")
+    await expect(readRow.getByLabel("Read")).toBeVisible()
+    await expect(unreadRow.getByText("Unread")).toBeVisible()
+    await expect(unreadRow.getByLabel("Read")).toHaveCount(0)
+  })
+
   test("clicking a row opens the item page", async ({ page }) => {
     const title = randomItemTitle()
     const description = randomItemDescription()
@@ -135,7 +165,9 @@ test.describe("Items management", () => {
     const itemRow = page.getByRole("row").filter({ hasText: title })
     await itemRow.getByRole("button").last().click()
 
-    await expect(page.getByRole("menuitem", { name: "Edit Item" })).toBeVisible()
+    await expect(
+      page.getByRole("menuitem", { name: "Edit Item" }),
+    ).toBeVisible()
     await expect(page).toHaveURL(/\/items$/)
   })
 

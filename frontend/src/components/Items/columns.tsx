@@ -72,13 +72,20 @@ export const columns: ColumnDef<ItemPublic>[] = [
     ),
   },
   {
+    accessorKey: "is_read",
+    header: "Read",
+    cell: ({ row }) =>
+      row.original.is_read ? (
+        <Check className="size-4" aria-label="Read" />
+      ) : (
+        <span className="sr-only">Unread</span>
+      ),
+  },
+  {
     id: "actions",
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
-      <div
-        className="flex justify-end"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
         <ItemActionsMenu item={row.original} />
       </div>
     ),

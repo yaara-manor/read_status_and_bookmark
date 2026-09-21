@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { AxiosError } from "axios"
 import { useEffect } from "react"
@@ -21,10 +21,18 @@ export const Route = createFileRoute("/_layout/items_/$itemId")({
 function ItemPage() {
   const { itemId } = Route.useParams()
   const navigate = useNavigate()
-  const { data: item, error, isPending } = useQuery({
+  const queryClient = useQueryClient()
+  const {
+    data: item,
+    error,
+    isPending,
+  } = useQuery({
     queryKey: ["items", itemId],
-    queryFn: async () =>
-      (await ItemsService.readItem({ path: { id: itemId } })).data,
+    queryFn: async () => {
+      const data = (await ItemsService.readItem({ path: { id: itemId } })).data
+      await queryClient.invalidateQueries({ queryKey: ["items"], exact: true })
+      return data
+    },
     retry: false,
   })
 

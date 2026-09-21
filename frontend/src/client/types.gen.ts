@@ -86,6 +86,10 @@ export type ItemPublic = {
      * Creator
      */
     creator: string;
+    /**
+     * Is Read
+     */
+    is_read?: boolean;
 };
 
 /**

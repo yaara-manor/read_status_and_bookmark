@@ -6,14 +6,22 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Item, ItemCreate, ItemPublic, ItemsPublic, ItemUpdate, Message
+from app.models import (
+    Item,
+    ItemCreate,
+    ItemPublic,
+    ItemReadLink,
+    ItemsPublic,
+    ItemUpdate,
+    Message,
+)
 
 router = APIRouter(prefix="/items", tags=["items"])
 
 
 @router.get("/", response_model=ItemsPublic)
 def read_items(
-    session: SessionDep, _current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve items.
@@ -27,19 +35,36 @@ def read_items(
         .limit(limit)
     )
     items = session.exec(statement).all()
-    items_public = [ItemPublic.from_item(item) for item in items]
+    item_ids = [item.id for item in items]
+    read_ids: set[uuid.UUID] = set()
+    if item_ids:
+        read_ids = set(
+            session.exec(
+                select(ItemReadLink.item_id).where(
+                    ItemReadLink.user_id == current_user.id,
+                    col(ItemReadLink.item_id).in_(item_ids),
+                )
+            ).all()
+        )
+    items_public = [
+        ItemPublic.from_item(item, is_read=item.id in read_ids) for item in items
+    ]
     return ItemsPublic(data=items_public, count=count)
 
 
 @router.get("/{id}", response_model=ItemPublic)
-def read_item(session: SessionDep, _current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """
     Get item by ID.
     """
     item = session.get(Item, id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return ItemPublic.from_item(item)
+    link = session.get(ItemReadLink, (current_user.id, item.id))
+    if link is None:
+        session.add(ItemReadLink(user_id=current_user.id, item_id=item.id))
+        session.commit()
+    return ItemPublic.from_item(item, is_read=True)
 
 
 @router.post("/", response_model=ItemPublic)

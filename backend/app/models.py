@@ -48,6 +48,15 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class ItemReadLink(SQLModel, table=True):
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", primary_key=True, ondelete="CASCADE"
+    )
+    item_id: uuid.UUID = Field(
+        foreign_key="item.id", primary_key=True, ondelete="CASCADE"
+    )
+
+
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -57,6 +66,9 @@ class User(UserBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
+    read_items: list[Item] = Relationship(
+        back_populates="readers", link_model=ItemReadLink
+    )
 
 
 # Properties to return via API, id is always required
@@ -98,6 +110,9 @@ class Item(ItemBase, table=True):
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     owner: User | None = Relationship(back_populates="items")
+    readers: list[User] = Relationship(
+        back_populates="read_items", link_model=ItemReadLink
+    )
 
 
 # Properties to return via API, id is always required
@@ -106,12 +121,13 @@ class ItemPublic(ItemBase):
     owner_id: uuid.UUID
     created_at: datetime | None = None
     creator: str
+    is_read: bool = False
 
     @classmethod
-    def from_item(cls, item: Item) -> ItemPublic:
+    def from_item(cls, item: Item, *, is_read: bool = False) -> ItemPublic:
         owner = item.owner
         creator = (owner.full_name or owner.email) if owner else ""
-        return cls.model_validate(item, update={"creator": creator})
+        return cls.model_validate(item, update={"creator": creator, "is_read": is_read})
 
 
 class ItemsPublic(SQLModel):

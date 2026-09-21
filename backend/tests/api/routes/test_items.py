@@ -111,6 +111,81 @@ def test_read_item_includes_creator_name(
     assert response.json()["creator"] == owner.email
 
 
+def test_read_item_marks_is_read(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    response = client.get(
+        f"{settings.API_V1_STR}/items/{item.id}",
+        headers=normal_user_token_headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["is_read"] is True
+
+
+def test_read_item_is_idempotent(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    url = f"{settings.API_V1_STR}/items/{item.id}"
+    first = client.get(url, headers=normal_user_token_headers)
+    second = client.get(url, headers=normal_user_token_headers)
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["is_read"] is True
+    assert second.json()["is_read"] is True
+
+
+def test_read_items_is_read_false_until_opened(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    response = client.get(
+        f"{settings.API_V1_STR}/items/",
+        headers=normal_user_token_headers,
+    )
+    assert response.status_code == 200
+    row = next(r for r in response.json()["data"] if r["id"] == str(item.id))
+    assert row["is_read"] is False
+
+
+def test_read_items_is_read_true_after_opened(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    item = create_random_item(db)
+    client.get(
+        f"{settings.API_V1_STR}/items/{item.id}",
+        headers=normal_user_token_headers,
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/items/",
+        headers=normal_user_token_headers,
+    )
+    assert response.status_code == 200
+    row = next(r for r in response.json()["data"] if r["id"] == str(item.id))
+    assert row["is_read"] is True
+
+
+def test_read_items_is_read_is_per_user(
+    client: TestClient,
+    normal_user_token_headers: dict[str, str],
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    item = create_random_item(db)
+    client.get(
+        f"{settings.API_V1_STR}/items/{item.id}",
+        headers=normal_user_token_headers,
+    )
+    response = client.get(
+        f"{settings.API_V1_STR}/items/",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    row = next(r for r in response.json()["data"] if r["id"] == str(item.id))
+    assert row["is_read"] is False
+
+
 def test_update_item(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
