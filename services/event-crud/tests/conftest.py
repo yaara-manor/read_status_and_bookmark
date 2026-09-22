@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import uuid
 from collections.abc import Generator
 from pathlib import Path
 
@@ -67,6 +68,12 @@ os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
 # Workspace installs backend's app package first. This service is also named app.
 sys.path.insert(0, str(_SERVICE_DIR))
 
+from contracts import (  # noqa: E402
+    CALLER_HEADER,
+    INTERNAL_KEY_HEADER,
+    Caller,
+    encode_caller,
+)
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlmodel import Session  # noqa: E402
 
@@ -102,7 +109,45 @@ def db() -> Generator[Session]:
         _delete_event_rows(session)
 
 
+def caller_headers(caller: Caller) -> dict[str, str]:
+    return {
+        INTERNAL_KEY_HEADER: os.environ["INTERNAL_API_KEY"],
+        CALLER_HEADER: encode_caller(caller),
+    }
+
+
+@pytest.fixture
+def superuser() -> Caller:
+    return Caller(
+        id=uuid.uuid4(),
+        is_active=True,
+        is_superuser=True,
+        display_name="Super User",
+    )
+
+
+@pytest.fixture
+def normal_user() -> Caller:
+    return Caller(
+        id=uuid.uuid4(),
+        is_active=True,
+        is_superuser=False,
+        display_name="Normal User",
+    )
+
+
+@pytest.fixture
+def superuser_headers(superuser: Caller) -> dict[str, str]:
+    return caller_headers(superuser)
+
+
+@pytest.fixture
+def normal_user_headers(normal_user: Caller) -> dict[str, str]:
+    return caller_headers(normal_user)
+
+
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient]:
-    with TestClient(app) as c:
+    headers = {INTERNAL_KEY_HEADER: os.environ["INTERNAL_API_KEY"]}
+    with TestClient(app, headers=headers) as c:
         yield c
