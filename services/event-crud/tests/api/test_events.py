@@ -4,7 +4,7 @@ from contracts import CALLER_HEADER, Caller, TicketAvailability
 from fastapi.testclient import TestClient
 from sqlmodel import Session, func, select
 
-from app.models import Event, EventReadLink, Ticket
+from app.models import Event, EventReadLink, Performer, Ticket, Venue
 from tests.conftest import caller_headers
 from tests.utils.event import create_performer, create_random_event, create_venue
 
@@ -567,6 +567,94 @@ def test_delete_event_not_found(
     response = client.delete(f"/events/{uuid.uuid4()}", headers=superuser_headers)
     assert response.status_code == 404
     assert response.json()["detail"] == "Event not found"
+
+
+def _venue(db: Session, name: str) -> Venue:
+    venue = Venue(name=name, city="Tel Aviv", country="Israel", seat_map=[1])
+    db.add(venue)
+    db.commit()
+    db.refresh(venue)
+    return venue
+
+
+def _performer(db: Session, name: str, genre: str = "MUSIC") -> Performer:
+    performer = Performer(name=name, genre=genre, description=None)
+    db.add(performer)
+    db.commit()
+    db.refresh(performer)
+    return performer
+
+
+def test_suggest_venues_prefix(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    hall = _venue(db, "Main Hall Annex")
+    other = _venue(db, "Drama House")
+    response = client.get("/venues", headers=superuser_headers, params={"q": "Ma"})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    ids = {row["id"] for row in data}
+    assert str(hall.id) in ids
+    assert str(other.id) not in ids
+    assert all(row["name"].lower().startswith("ma") for row in data)
+
+
+def test_suggest_venues_case_insensitive(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    hall = _venue(db, "Main Hall Case")
+    response = client.get("/venues", headers=superuser_headers, params={"q": "ma"})
+    assert response.status_code == 200
+    ids = {row["id"] for row in response.json()["data"]}
+    assert str(hall.id) in ids
+
+
+def test_suggest_performers_prefix(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    band = _performer(db, "The Bandstand")
+    other = _performer(db, "Someone Else", genre="SPORT")
+    response = client.get("/performers", headers=superuser_headers, params={"q": "The"})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    match = next(row for row in data if row["id"] == str(band.id))
+    assert match["name"] == "The Bandstand"
+    assert match["genre"] == "MUSIC"
+    assert str(other.id) not in {row["id"] for row in data}
+
+
+def test_suggest_empty_query(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    _venue(db, "Empty Query Hall")
+    for query in ("", "   "):
+        response = client.get("/venues", headers=superuser_headers, params={"q": query})
+        assert response.status_code == 200
+        assert response.json()["data"] == []
+
+
+def test_suggest_limit_capped(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    for index in range(12):
+        _venue(db, f"Cap{index:02d} Hall")
+    response = client.get(
+        "/venues", headers=superuser_headers, params={"q": "Cap", "limit": 1000}
+    )
+    assert response.status_code == 200
+    assert len(response.json()["data"]) == 10
+
+
+def test_suggest_percent_is_literal(
+    client: TestClient, superuser_headers: dict[str, str], db: Session
+) -> None:
+    literal = _venue(db, "%Only Hall")
+    plain = _venue(db, "Plain Hall")
+    response = client.get("/venues", headers=superuser_headers, params={"q": "%"})
+    assert response.status_code == 200
+    ids = {row["id"] for row in response.json()["data"]}
+    assert ids == {str(literal.id)}
+    assert str(plain.id) not in ids
 
 
 def test_delete_event_not_enough_permissions(

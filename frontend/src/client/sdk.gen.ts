@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { authLoginData, authLoginErrors, authLoginResponses, authRecoverPasswordData, authRecoverPasswordErrors, authRecoverPasswordResponses, authRegisterData, authRegisterErrors, authRegisterResponses, authResetPasswordData, authResetPasswordErrors, authResetPasswordResponses, devCreateUserData, devCreateUserErrors, devCreateUserResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadBookmarkedEventsData, eventsReadBookmarkedEventsErrors, eventsReadBookmarkedEventsResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsSetEventBookmarkData, eventsSetEventBookmarkErrors, eventsSetEventBookmarkResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, healthHealthCheckData, healthHealthCheckResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
+import type { authLoginData, authLoginErrors, authLoginResponses, authRecoverPasswordData, authRecoverPasswordErrors, authRecoverPasswordResponses, authRegisterData, authRegisterErrors, authRegisterResponses, authResetPasswordData, authResetPasswordErrors, authResetPasswordResponses, devCreateUserData, devCreateUserErrors, devCreateUserResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadBookmarkedEventsData, eventsReadBookmarkedEventsErrors, eventsReadBookmarkedEventsResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsSetEventBookmarkData, eventsSetEventBookmarkErrors, eventsSetEventBookmarkResponses, eventsSuggestPerformersData, eventsSuggestPerformersErrors, eventsSuggestPerformersResponses, eventsSuggestVenuesData, eventsSuggestVenuesErrors, eventsSuggestVenuesResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, healthHealthCheckData, healthHealthCheckResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -220,6 +220,30 @@ export class UsersService {
 }
 
 export class EventsService {
+    /**
+     * Suggest Venues
+     */
+    public static suggestVenues<ThrowOnError extends boolean = true>(options?: Options<eventsSuggestVenuesData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsSuggestVenuesResponses, eventsSuggestVenuesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/venues',
+            ...options
+        });
+    }
+    
+    /**
+     * Suggest Performers
+     */
+    public static suggestPerformers<ThrowOnError extends boolean = true>(options?: Options<eventsSuggestPerformersData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsSuggestPerformersResponses, eventsSuggestPerformersErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/performers',
+            ...options
+        });
+    }
+    
     /**
      * Read Events
      */

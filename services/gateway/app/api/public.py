@@ -81,6 +81,23 @@ def _proxy_endpoint(route: PublicRoute):
                 annotation=int,
             )
         )
+    if route.suggest:
+        parameters.append(
+            inspect.Parameter(
+                "q",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default="",
+                annotation=str,
+            )
+        )
+        parameters.append(
+            inspect.Parameter(
+                "limit",
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=10,
+                annotation=int,
+            )
+        )
     endpoint.__signature__ = inspect.Signature(parameters)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
     endpoint.__name__ = route.name
     return endpoint

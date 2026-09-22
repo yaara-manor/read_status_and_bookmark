@@ -10,6 +10,8 @@ from contracts.events import (
     EventPublic,
     EventsPublic,
     EventUpdate,
+    PerformersMatch,
+    VenuesMatch,
 )
 from contracts.users import (
     DevUserCreate,
@@ -44,6 +46,7 @@ class PublicRoute:
     caller: bool = False
     dev_only: bool = False
     paged: bool = False
+    suggest: bool = False
 
 
 # More specific paths stay ahead of `/{param}` so the mount order matches them.
@@ -169,6 +172,26 @@ PUBLIC_ROUTES: tuple[PublicRoute, ...] = (
         Message,
         "user",
         caller=True,
+    ),
+    PublicRoute(
+        "GET",
+        "/venues",
+        "suggest_venues",
+        "events",
+        VenuesMatch,
+        "event",
+        caller=True,
+        suggest=True,
+    ),
+    PublicRoute(
+        "GET",
+        "/performers",
+        "suggest_performers",
+        "events",
+        PerformersMatch,
+        "event",
+        caller=True,
+        suggest=True,
     ),
     PublicRoute(
         "GET",

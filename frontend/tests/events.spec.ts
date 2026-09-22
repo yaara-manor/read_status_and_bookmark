@@ -8,34 +8,16 @@ import {
 } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
-async function openingNightRefs(page: Page) {
-  const token = await page.evaluate(() => localStorage.getItem("access_token"))
-  const response = await page.request.get(
-    `${process.env.VITE_API_URL ?? "http://localhost:8000"}/api/v1/events/?skip=0&limit=100`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
-  const body = await response.json()
-  const row = body.data.find(
-    (event: { name: string }) => event.name === "Opening Night",
-  )
-  if (!row) {
-    throw new Error("Opening Night missing")
-  }
-  return {
-    venueId: row.venue_id as string,
-    performerId: row.performer_id as string,
-  }
-}
-
 async function fillEvent(page: Page, name: string, description?: string) {
-  const { venueId, performerId } = await openingNightRefs(page)
   const dialog = page.getByRole("dialog")
   await dialog.getByLabel("Name").fill(name)
   if (description) {
     await dialog.getByLabel("Description").fill(description)
   }
-  await dialog.getByLabel("Venue ID").fill(venueId)
-  await dialog.getByLabel("Performer ID").fill(performerId)
+  await dialog.getByLabel("Venue").fill("Ma")
+  await dialog.getByRole("option", { name: "Main Hall" }).click()
+  await dialog.getByLabel("Performer").fill("Th")
+  await dialog.getByRole("option", { name: "The Band" }).click()
   await dialog.getByLabel("Time").fill("2026-10-01T20:00")
   await dialog.getByLabel("Price").fill("25")
 }

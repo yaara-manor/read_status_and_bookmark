@@ -10,7 +10,11 @@ from contracts import (
     EventsPublic,
     EventUpdate,
     Message,
+    PerformerMatch,
+    PerformersMatch,
     TicketPublic,
+    VenueMatch,
+    VenuesMatch,
 )
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, col, func, select
@@ -18,7 +22,7 @@ from sqlmodel import Session, col, func, select
 from app import crud
 from app.api.deps import CallerDep, SessionDep
 from app.api.mount import mount_catalog
-from app.models import Event, EventBookmarkLink, EventReadLink, Ticket
+from app.models import Event, EventBookmarkLink, EventReadLink, Performer, Ticket, Venue
 
 router = APIRouter()
 
@@ -169,6 +173,26 @@ def set_event_bookmark(
     return event_public(event, is_read=is_read, is_bookmarked=body.is_bookmarked)
 
 
+def suggest_venues(
+    session: SessionDep, caller: CallerDep, q: str = "", limit: int = 10
+) -> VenuesMatch:
+    del caller
+    rows = crud.match_name_prefix(session, Venue, q, limit)
+    return VenuesMatch(data=[VenueMatch(id=row.id, name=row.name) for row in rows])
+
+
+def suggest_performers(
+    session: SessionDep, caller: CallerDep, q: str = "", limit: int = 10
+) -> PerformersMatch:
+    del caller
+    rows = crud.match_name_prefix(session, Performer, q, limit)
+    return PerformersMatch(
+        data=[
+            PerformerMatch(id=row.id, name=row.name, genre=row.genre) for row in rows
+        ]
+    )
+
+
 def create_event(
     *, session: SessionDep, caller: CallerDep, event_in: EventCreate
 ) -> Any:
@@ -223,6 +247,8 @@ mount_catalog(
         "read_bookmarked_events": read_bookmarked_events,
         "read_event": read_event,
         "set_event_bookmark": set_event_bookmark,
+        "suggest_venues": suggest_venues,
+        "suggest_performers": suggest_performers,
         "create_event": create_event,
         "update_event": update_event,
         "delete_event": delete_event,

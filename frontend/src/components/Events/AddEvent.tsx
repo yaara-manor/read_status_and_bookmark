@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type EventCreate, EventsService } from "@/client"
+import NamePicker from "@/components/Events/NamePicker"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,8 +34,8 @@ import { handleError } from "@/utils"
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
-  venue_id: z.string().min(1, { message: "Venue ID is required" }),
-  performer_id: z.string().min(1, { message: "Performer ID is required" }),
+  venue_id: z.string().min(1, { message: "Choose a venue" }),
+  performer_id: z.string().min(1, { message: "Choose a performer" }),
   time: z.string().min(1, { message: "Time is required" }),
   price: z
     .string()
@@ -52,6 +53,8 @@ function apiTime(value: string) {
 
 const AddEvent = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [venueName, setVenueName] = useState("")
+  const [performerName, setPerformerName] = useState("")
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -75,6 +78,8 @@ const AddEvent = () => {
     onSuccess: () => {
       showSuccessToast("Event created successfully")
       form.reset()
+      setVenueName("")
+      setPerformerName("")
       setIsOpen(false)
     },
     onError: handleError.bind(showErrorToast),
@@ -148,40 +153,59 @@ const AddEvent = () => {
               <FormField
                 control={form.control}
                 name="venue_id"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>
-                      Venue ID <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Venue ID"
-                        type="text"
-                        {...field}
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
+                    <NamePicker
+                      label="Venue"
+                      placeholder="Main Hall"
+                      queryKey="venues"
+                      id={field.value}
+                      selectedName={venueName}
+                      error={fieldState.error?.message}
+                      onPick={(id, name) => {
+                        field.onChange(id)
+                        setVenueName(name)
+                      }}
+                      search={async (query) => {
+                        const result = await EventsService.suggestVenues({
+                          query: { q: query, limit: 10 },
+                        })
+                        return (result.data?.data ?? []).map((row) => ({
+                          id: row.id,
+                          name: row.name,
+                        }))
+                      }}
+                    />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="performer_id"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>
-                      Performer ID <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Performer ID"
-                        type="text"
-                        {...field}
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
+                    <NamePicker
+                      label="Performer"
+                      placeholder="The Band"
+                      queryKey="performers"
+                      id={field.value}
+                      selectedName={performerName}
+                      error={fieldState.error?.message}
+                      onPick={(id, name) => {
+                        field.onChange(id)
+                        setPerformerName(name)
+                      }}
+                      search={async (query) => {
+                        const result = await EventsService.suggestPerformers({
+                          query: { q: query, limit: 10 },
+                        })
+                        return (result.data?.data ?? []).map((row) => ({
+                          id: row.id,
+                          name: row.name,
+                          hint: row.genre,
+                        }))
+                      }}
+                    />
                   </FormItem>
                 )}
               />
