@@ -10,7 +10,7 @@ github-actions = [
 ]
 
 [tool.uv.workspace]
-members = ["backend"]
+members = ["backend", "packages/contracts"]
 
 [tool.typos.files]
 extend-exclude = [
