@@ -13,7 +13,7 @@ repos:
         exclude: |
             (?x)^(
                 frontend/src/client/.*|
-                backend/app/email-templates/.*
+                services/user-crud/app/email-templates/.*
             )$
       - id: trailing-whitespace
         exclude: ^frontend/src/client/.*
@@ -47,14 +47,14 @@ repos:
 
       - id: local-mypy
         name: mypy check
-        entry: uv run mypy backend/app
+        entry: bash -c 'uv run mypy services/user-crud/app && uv run mypy services/event-crud/app && uv run mypy services/gateway/app && uv run mypy packages/contracts/contracts'
         require_serial: true
         language: unsupported
         pass_filenames: false
 
       - id: local-ty
         name: ty check
-        entry: uv run ty check backend/app
+        entry: bash -c 'uv run ty check --extra-search-path services/user-crud services/user-crud/app && uv run ty check --extra-search-path services/event-crud services/event-crud/app && uv run ty check --extra-search-path services/gateway services/gateway/app && uv run ty check packages/contracts/contracts'
         require_serial: true
         language: unsupported
         pass_filenames: false
@@ -64,7 +64,7 @@ repos:
         entry: bash ./scripts/generate-client.sh
         pass_filenames: false
         language: unsupported
-        files: ^backend/app/.*\.py$|^backend/pyproject\.toml$|^uv\.lock$|^frontend/openapi-ts\.config\.ts$|^scripts/generate-client\.sh$
+        files: ^uv\.lock$|^frontend/openapi-ts\.config\.ts$|^scripts/generate-client\.sh$|^services/gateway/|^services/user-crud/app/|^services/event-crud/app/|^packages/contracts/
 
       - id: add-release-date
         language: unsupported

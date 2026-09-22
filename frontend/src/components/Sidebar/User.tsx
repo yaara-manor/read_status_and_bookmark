@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import useAuth from "@/hooks/useAuth"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 import { getInitials } from "@/utils"
 
 interface UserInfoProps {
@@ -44,7 +44,7 @@ export function User({ user }: { user: any }) {
   const { logout } = useAuth()
   const { isMobile, setOpenMobile } = useSidebar()
 
-  if (!user) return null
+  if (!isLoggedIn()) return null
 
   const handleMenuClick = () => {
     if (isMobile) {

@@ -28,6 +28,8 @@ jobs:
       EMAILS_FROM_EMAIL: ${{ vars.EMAILS_FROM_EMAIL }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+      REDIS_URL: ${{ vars.REDIS_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -36,6 +38,8 @@ jobs:
       - name: Build
         run: docker compose -f compose.yml -f compose.deploy.yml build
       - name: Prepare database
-        run: docker compose -f compose.yml -f compose.deploy.yml run --rm backend bash scripts/prestart.sh
+        run: |
+          docker compose -f compose.yml -f compose.deploy.yml run --rm user-crud bash scripts/prestart.sh
+          docker compose -f compose.yml -f compose.deploy.yml run --rm event-crud bash scripts/prestart.sh
       - name: Start application
         run: docker compose -f compose.yml -f compose.deploy.yml up -d

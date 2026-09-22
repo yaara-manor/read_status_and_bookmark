@@ -1,0 +1,141 @@
+import os
+import re
+import sys
+from collections.abc import Generator
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine.url import make_url
+
+_TEST_DB = "app_test"
+_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+_SERVICE_DIR = Path(__file__).resolve().parents[1]
+
+
+def _parse_env_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not path.is_file():
+        return values
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def _expand(value: str, file_env: dict[str, str]) -> str:
+    def repl(match: re.Match[str]) -> str:
+        key = match.group(1)
+        return file_env.get(key) or os.environ.get(key) or match.group(0)
+
+    return re.sub(r"\$\{([^}]+)\}", repl, value)
+
+
+def _database_url() -> str:
+    file_env = _parse_env_file(_ENV_FILE)
+    raw = os.environ.get("DATABASE_URL") or file_env.get("DATABASE_URL")
+    if not raw:
+        raise RuntimeError("DATABASE_URL is not set")
+    return _expand(raw, file_env)
+
+
+def _use_test_database() -> None:
+    url = make_url(_database_url())
+    if url.drivername in {"postgres", "postgresql"}:
+        url = url.set(drivername="postgresql+psycopg")
+    if url.database != _TEST_DB:
+        admin = create_engine(url, isolation_level="AUTOCOMMIT")
+        with admin.connect() as conn:
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"),
+                {"name": _TEST_DB},
+            ).scalar()
+            if not exists:
+                conn.execute(text(f"CREATE DATABASE {_TEST_DB}"))
+        admin.dispose()
+        url = url.set(database=_TEST_DB)
+    os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
+
+
+def _use_private_redis(index: int) -> None:
+    # Lifespan publisher must not XADD fixture rows onto Redis DB 0.
+    file_env = _parse_env_file(_ENV_FILE)
+    raw = (
+        os.environ.get("REDIS_URL")
+        or file_env.get("REDIS_URL")
+        or "redis://localhost:6379/0"
+    )
+    parts = urlsplit(raw)
+    os.environ["REDIS_URL"] = urlunsplit(
+        (
+            parts.scheme or "redis",
+            parts.netloc,
+            f"/{index}",
+            parts.query,
+            parts.fragment,
+        )
+    )
+
+
+_use_test_database()
+_use_private_redis(15)
+os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
+# Sibling services are also named app. Drop them so this tree wins.
+_others = {
+    (_SERVICE_DIR.parent / name).resolve()
+    for name in ("user-crud", "event-crud", "gateway")
+}
+_others.discard(_SERVICE_DIR.resolve())
+sys.path[:] = [entry for entry in sys.path if Path(entry).resolve() not in _others]
+sys.path.insert(0, str(_SERVICE_DIR))
+
+from contracts import (  # noqa: E402
+    CALLER_HEADER,
+    INTERNAL_KEY_HEADER,
+    Caller,
+    encode_caller,
+)
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlmodel import Session  # noqa: E402
+
+from app.core.db import engine, init_db  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models import User  # noqa: E402
+from app.outbox import display_name  # noqa: E402
+
+
+def caller_headers(user: User) -> dict[str, str]:
+    caller = Caller(
+        id=user.id,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+        display_name=display_name(user),
+    )
+    return {CALLER_HEADER: encode_caller(caller)}
+
+
+def _upgrade_test_db() -> None:
+    cfg = Config(str(_SERVICE_DIR / "alembic.ini"))
+    cfg.set_main_option("script_location", str(_SERVICE_DIR / "app" / "alembic"))
+    command.upgrade(cfg, "head")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def db() -> Generator[Session]:
+    _upgrade_test_db()
+    with Session(engine) as session:
+        init_db(session)
+        yield session
+
+
+@pytest.fixture(scope="module")
+def client() -> Generator[TestClient]:
+    headers = {INTERNAL_KEY_HEADER: os.environ["INTERNAL_API_KEY"]}
+    with TestClient(app, headers=headers) as c:
+        yield c

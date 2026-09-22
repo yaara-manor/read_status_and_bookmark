@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { AxiosError } from "axios"
 
 import {
-  type Body_login_login_access_token as AccessToken,
-  LoginService,
+  AuthService,
+  type LoginRequest,
   type UserPublic,
   type UserRegister,
   UsersService,
@@ -22,13 +23,22 @@ const useAuth = () => {
 
   const { data: user } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
-    queryFn: async () => (await UsersService.readUserMe()).data,
+    queryFn: async () => {
+      try {
+        return (await UsersService.readUserMe()).data
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.status === 404) {
+          localStorage.removeItem("access_token")
+          window.location.href = "/login"
+        }
+        throw error
+      }
+    },
     enabled: isLoggedIn(),
   })
 
   const signUpMutation = useMutation({
-    mutationFn: (data: UserRegister) =>
-      UsersService.registerUser({ body: data }),
+    mutationFn: (data: UserRegister) => AuthService.register({ body: data }),
     onSuccess: () => {
       navigate({ to: "/login" })
     },
@@ -38,8 +48,8 @@ const useAuth = () => {
     },
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
+  const login = async (data: LoginRequest) => {
+    const response = await AuthService.login({
       body: data,
     })
     localStorage.setItem("access_token", response.data.access_token)

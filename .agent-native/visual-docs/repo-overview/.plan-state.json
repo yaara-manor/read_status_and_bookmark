@@ -1,0 +1,19 @@
+{
+  "localOnly": true,
+  "kind": "plan",
+  "visualDocs": {
+    "manifest": "../../../agent-native.json",
+    "targets": [
+      "backend-app-models-py",
+      "backend-app-api-routes-login-py",
+      "backend-app-api-routes-items-py",
+      "backend-app-api-routes-users-py",
+      "frontend-src-routes-login-tsx",
+      "frontend-src-routes-_layout-items-tsx",
+      "frontend-src-routes-_layout-admin-tsx",
+      "frontend-src-routes-_layout-settings-tsx",
+      "frontend-src-components-sidebar-appsidebar-tsx"
+    ]
+  },
+  "createdAt": "2026-09-18T08:15:08.858Z"
+}

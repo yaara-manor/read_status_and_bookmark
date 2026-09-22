@@ -29,15 +29,15 @@ If you are developing an API-only app and want to remove the frontend, you can d
 
 * Remove the `./frontend` directory.
 
-* In the `backend/app/main.py` file, remove the `app.frontend()` call.
+* In the `services/gateway/app/main.py` file, remove the `app.frontend()` call.
 
-* In the `backend/Dockerfile` file, remove the frontend build stage and the `COPY --from=frontend-build` instruction.
+* In the `services/gateway/Dockerfile` file, remove the frontend build stage and the `COPY --from=frontend-build` instruction.
 
 * In the `compose.override.yml` file, remove the `playwright` service.
 
 * In the `.github/workflows/deploy.yml` file, remove the **Set up Bun**, **Install frontend dependencies**, and **Build frontend** steps.
 
-* In the `.fastapicloudignore` file, remove the `!backend/app/frontend/` entry.
+* In the `.fastapicloudignore` file, remove the `!services/gateway/app/frontend/` entry.
 
 Done, you now have an API-only app. 🤓
 

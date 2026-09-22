@@ -1,0 +1,262 @@
+---
+title: "Full Stack FastAPI Template — product map"
+brief: "This repo is a starter web product: authenticated people can sign in, manage their account, and share a catalog of items. Superusers administer other users. The folder name is the assignment context; the running product is still this template."
+kind: "plan"
+localOnly: true
+---
+
+# Why this repo exists
+
+This is **Tiangolo's Full Stack FastAPI Template**: a complete, deployable app you copy to start a real product. It is not a library. It is a working dashboard with two durable nouns — **User** and **Item** — plus the auth, email, admin, tests, and Docker/CI you would otherwise rebuild.
+
+**Product job:** let a site have accounts, let those accounts create and edit titled records ("items"), and let an operator (superuser) manage who is allowed in.
+
+The workspace folder is named `read_status_and_bookmark`. That is assignment context. **Read status and bookmarks are not implemented.** Items today are a generic title + description owned by a user. Bookmarking or "I've read this" would be new fields or tables on top of this skeleton.
+
+## What a person can do
+
+1. **Join or be invited** — self-signup (`POST /users/signup`) or an admin creates the account and optionally emails credentials.
+2. **Sign in** — email + password become a JWT stored by the SPA. Inactive users are blocked.
+3. **Recover access** — request a reset email (always the same success copy, to avoid email enumeration), then set a new password with the token.
+4. **Land on a dashboard** — greeting only; navigation lives in the sidebar.
+5. **Work with items** — anyone logged in can list all items and create one. Update/delete is owner or superuser.
+6. **Manage self** — name, email, password, or delete own account (superusers cannot self-delete).
+7. **Administer users** — superusers only: list, create, edit flags (active / superuser), delete others.
+
+Unauthenticated routes: login, signup, recover password, reset password. Everything under `/_layout` redirects to login if there is no token.
+
+<Diagram id="product-loop" title="Product loop" summary="Accounts, a JWT session, then items for everyone and user admin for superusers.">
+
+```html
+<div class="diagram-plan">
+  <div class="diagram-col">
+    <div class="diagram-node"><span class="diagram-pill">Signup / admin create</span><small class="diagram-muted">User row + hashed password</small></div>
+    <div class="diagram-node"><span class="diagram-pill accent">Login JWT</span><small class="diagram-muted">Bearer on /api/v1/*</small></div>
+  </div>
+  <div class="diagram-arrow diagram-muted" aria-hidden="true">&rarr;</div>
+  <div class="diagram-panel center">
+    Signed-in dashboard<br />
+    <small class="diagram-muted">sidebar: Home, Items, Settings; Admin if superuser</small>
+  </div>
+  <div class="diagram-arrow diagram-muted" aria-hidden="true">&rarr;</div>
+  <div class="diagram-col">
+    <div class="diagram-node"><span class="diagram-pill">Items catalog</span><small class="diagram-muted">create own; edit/delete own or admin</small></div>
+    <div class="diagram-node"><span class="diagram-pill">User admin</span><small class="diagram-muted">superuser only</small></div>
+  </div>
+</div>
+```
+
+</Diagram>
+
+## Stack shape
+
+- **Backend:** FastAPI + SQLModel + PostgreSQL. API prefix `/api/v1`. OpenAPI drives a generated TypeScript client.
+- **Frontend:** React, Vite, TanStack Router/Query, Tailwind, shadcn. Built into `backend/app/frontend` and served by FastAPI on the same origin in production.
+- **Email:** React Email templates + SMTP (Mailpit locally) for password reset and new-account mail.
+- **Ops:** Docker Compose, Traefik, GitHub Actions, optional FastAPI Cloud.
+
+<FileTree id="visualized-targets" title="Visualized targets" entries={[{"path":"backend/app/models.py","note":"User and Item — the only persisted product nouns"},{"path":"backend/app/api/routes/login.py","note":"JWT issue and password recovery"},{"path":"backend/app/api/routes/users.py","note":"signup, me, admin user CRUD"},{"path":"backend/app/api/routes/items.py","note":"item catalog API"},{"path":"frontend/src/routes/login.tsx","note":"sign-in screen"},{"path":"frontend/src/routes/_layout/items.tsx","note":"item table UI"},{"path":"frontend/src/routes/_layout/admin.tsx","note":"user table UI"},{"path":"frontend/src/routes/_layout/settings.tsx","note":"self-service account"},{"path":"frontend/src/components/Sidebar/AppSidebar.tsx","note":"nav + role-gated Admin"}]} />
+
+## 1. Data model — User and Item
+
+Source: `backend/app/models.py`
+
+Two tables. A user owns many items; deleting a user cascades items. Passwords are stored hashed only. API DTOs (`UserPublic`, `ItemPublic`, `Token`, …) sit in the same file so OpenAPI stays in one place.
+
+`ItemPublic.creator` is not a column: it is derived from the owner's name or email when serializing.
+
+<DataModel
+  id="schema-user-item"
+  title="Persisted product nouns"
+  summary="User authenticates and owns Items. Item is the placeholder record type for whatever the next product (e.g. bookmarks) would store."
+  entities={[
+    {
+      id: "user",
+      name: "User",
+      note: "account + role flags",
+      fields: [
+        { name: "id", type: "uuid", pk: true },
+        { name: "email", type: "varchar(255)", note: "unique, login username" },
+        { name: "hashed_password", type: "str" },
+        { name: "full_name", type: "varchar(255)", nullable: true },
+        { name: "is_active", type: "bool", default: "true", note: "inactive cannot login" },
+        { name: "is_superuser", type: "bool", default: "false", note: "admin UI + privileged mutations" },
+        { name: "created_at", type: "timestamptz", nullable: true }
+      ]
+    },
+    {
+      id: "item",
+      name: "Item",
+      note: "generic owned record",
+      fields: [
+        { name: "id", type: "uuid", pk: true },
+        { name: "title", type: "varchar(255)" },
+        { name: "description", type: "varchar(255)", nullable: true },
+        { name: "owner_id", type: "uuid", fk: "User.id" },
+        { name: "created_at", type: "timestamptz", nullable: true }
+      ]
+    }
+  ]}
+  relations={[{ from: "user", to: "item", kind: "1-n", label: "owns (cascade delete)" }]}
+/>
+
+## 2. Auth API — get a session, recover it
+
+Source: `backend/app/api/routes/login.py`
+
+**Purpose:** prove identity and mint a short-lived JWT so the SPA can call the rest of `/api/v1`. Also the forgotten-password path without leaking whether an email exists.
+
+<Endpoint id="ep-login" method="POST" path="/api/v1/login/access-token" summary="Exchange email+password for a bearer JWT" auth="None (OAuth2 password form). username field is the email." request={{ contentType: "application/x-www-form-urlencoded", example: "username=a@b.com&password=secret123" }} responses={[{ status: "200", description: "Token", example: "{\"access_token\":\"…\",\"token_type\":\"bearer\"}" }, { status: "400", description: "Wrong credentials or inactive user" }]}>
+
+Inactive accounts fail here, not later. Token TTL is `ACCESS_TOKEN_EXPIRE_MINUTES`.
+
+</Endpoint>
+
+<Endpoint id="ep-recover" method="POST" path="/api/v1/password-recovery/{email}" summary="Send reset mail if the address exists; always the same message" auth="None" responses={[{ status: "200", description: "Generic success copy" }]}>
+
+Prevents email enumeration. Real send only when `crud.get_user_by_email` finds a row.
+
+</Endpoint>
+
+<Endpoint id="ep-reset" method="POST" path="/api/v1/reset-password/" summary="Set a new password using the emailed token" auth="None (token in body)" request={{ contentType: "application/json", example: "{\"token\":\"…\",\"new_password\":\"newpass12\"}" }} responses={[{ status: "200", description: "Password updated" }, { status: "400", description: "Invalid token or inactive user" }]} />
+
+## 3. Users API — join, self-serve, operate
+
+Source: `backend/app/api/routes/users.py`
+
+**Purpose:** create and mutate accounts. Split into three jobs: public signup, authenticated "me", superuser directory.
+
+<Endpoint id="ep-signup" method="POST" path="/api/v1/users/signup" summary="Self-register a normal (non-superuser) account" auth="None" request={{ contentType: "application/json", example: "{\"email\":\"a@b.com\",\"password\":\"secret123\",\"full_name\":\"Ada\"}" }} responses={[{ status: "200", description: "UserPublic" }, { status: "400", description: "Email already exists" }]} />
+
+<Endpoint id="ep-me" method="GET" path="/api/v1/users/me" summary="Who am I — drives sidebar Admin link and settings" auth="Bearer JWT" responses={[{ status: "200", description: "UserPublic including is_superuser / is_active" }]} />
+
+<Endpoint id="ep-users-list" method="GET" path="/api/v1/users/" summary="Paginated user directory" auth="Bearer JWT + must be active superuser" params={[{ name: "skip", in: "query", type: "int" }, { name: "limit", in: "query", type: "int" }]} responses={[{ status: "200", description: "UsersPublic { data, count }" }]} />
+
+Related: `PATCH /users/me`, `PATCH /users/me/password`, `DELETE /users/me` (blocked for superusers), admin `POST /users/`, `PATCH /users/{id}`, `DELETE /users/{id}`.
+
+## 4. Items API — the catalog
+
+Source: `backend/app/api/routes/items.py`
+
+**Purpose:** the template's stand-in for "the thing your product is about." List is **global** (every logged-in user sees every item). Mutations require ownership or superuser.
+
+<Endpoint id="ep-items-list" method="GET" path="/api/v1/items/" summary="List items newest first, with derived creator label" auth="Bearer JWT" params={[{ name: "skip", in: "query", type: "int" }, { name: "limit", in: "query", type: "int" }]} responses={[{ status: "200", description: "ItemsPublic" }]} />
+
+<Endpoint id="ep-items-create" method="POST" path="/api/v1/items/" summary="Create an item owned by the current user" auth="Bearer JWT" request={{ contentType: "application/json", example: "{\"title\":\"Note\",\"description\":\"optional\"}" }} responses={[{ status: "200", description: "ItemPublic" }]} />
+
+`PUT` / `DELETE /items/{id}`: 404 if missing, 403 if not owner and not superuser.
+
+## 5. Login screen
+
+Source: `frontend/src/routes/login.tsx`
+
+**Purpose:** get a token into the client. If already logged in, bounce to `/`. Form fields map to OAuth2 (`username` = email). Links out to signup and recover-password.
+
+<WireframeBlock id="wf-login">
+  <Screen
+    surface="desktop"
+    caption="Unauthenticated login"
+    html={
+      "<div style='display:flex;min-height:480px;align-items:center;justify-content:center;padding:24px'><div class='wf-card' style='width:360px;display:flex;flex-direction:column;gap:12px;padding:20px'><strong>Log in</strong><span class='wf-muted' style='font-size:12px'>Email + password → JWT</span><div class='wf-box' style='height:36px'>email</div><div class='wf-box' style='height:36px'>password</div><button class='primary'>Log In</button><div class='wf-muted' style='font-size:12px'>Sign up · Forgot password</div></div></div>"
+    }
+  />
+</WireframeBlock>
+
+## 6. Items screen
+
+Source: `frontend/src/routes/_layout/items.tsx`
+
+**Purpose:** operate the catalog. Empty state explains there are no rows yet. `AddItem` dialog posts create. Table actions edit/delete via owner/admin rules on the API.
+
+<WireframeBlock id="wf-items">
+  <Screen
+    surface="desktop"
+    caption="Items catalog"
+    html={
+      "<div style='display:grid;grid-template-columns:200px 1fr;min-height:480px'><aside class='wf-card' style='padding:12px;display:flex;flex-direction:column;gap:8px'><div class='wf-box'>Dashboard</div><div class='wf-box' style='outline:2px solid var(--wf-accent, #888)'>Items</div><div class='wf-box'>Settings</div></aside><main style='padding:16px;display:flex;flex-direction:column;gap:12px'><div style='display:flex;justify-content:space-between'><strong>Items</strong><button class='primary'>Add Item</button></div><div class='wf-card' style='padding:10px;display:flex;flex-direction:column;gap:8px'><div class='wf-box'>Title · Description · Creator · actions</div><div class='wf-box'>Row</div><div class='wf-box'>Row</div></div></main></div>"
+    }
+  />
+</WireframeBlock>
+
+## 7. Admin screen
+
+Source: `frontend/src/routes/_layout/admin.tsx`
+
+**Purpose:** operator console for accounts. `beforeLoad` calls `readUserMe` and redirects non-superusers to `/`. Table lists users; add/edit toggles active and superuser; delete is for other users.
+
+<WireframeBlock id="wf-admin">
+  <Screen
+    surface="desktop"
+    caption="Superuser user directory"
+    html={
+      "<div style='display:grid;grid-template-columns:200px 1fr;min-height:480px'><aside class='wf-card' style='padding:12px;display:flex;flex-direction:column;gap:8px'><div class='wf-box'>Dashboard</div><div class='wf-box'>Items</div><div class='wf-box' style='outline:2px solid var(--wf-accent, #888)'>Admin</div></aside><main style='padding:16px;display:flex;flex-direction:column;gap:12px'><div style='display:flex;justify-content:space-between'><strong>Users</strong><button class='primary'>Add User</button></div><div class='wf-card' style='padding:10px;display:flex;flex-direction:column;gap:8px'><div class='wf-box'>email · name · role · active · actions</div><div class='wf-box'>superuser row</div><div class='wf-box'>member row</div></div></main></div>"
+    }
+  />
+</WireframeBlock>
+
+## 8. Settings screen
+
+Source: `frontend/src/routes/_layout/settings.tsx`
+
+**Purpose:** the signed-in person maintaining their own identity. Tabs: My profile (`PATCH /users/me`), Password (`PATCH /users/me/password`), Danger zone (`DELETE /users/me`). Superusers still see Danger zone in the tab list, but the API refuses self-delete.
+
+<WireframeBlock id="wf-settings">
+  <Screen
+    surface="desktop"
+    caption="Self-service account"
+    html={
+      "<div style='padding:20px;display:flex;flex-direction:column;gap:12px;min-height:360px'><strong>User Settings</strong><div style='display:flex;gap:8px'><div class='wf-box' style='padding:8px'>My profile</div><div class='wf-box' style='padding:8px'>Password</div><div class='wf-box' style='padding:8px'>Danger zone</div></div><div class='wf-card' style='padding:16px;display:flex;flex-direction:column;gap:8px'><div class='wf-box' style='height:32px'>full name</div><div class='wf-box' style='height:32px'>email</div><button class='primary'>Save</button></div></div>"
+    }
+  />
+</WireframeBlock>
+
+## 9. App sidebar
+
+Source: `frontend/src/components/Sidebar/AppSidebar.tsx`
+
+**Purpose:** wayfinding after login. Always: Dashboard `/`, Items `/items`. If `currentUser.is_superuser`: Admin `/admin`. Footer: appearance (dark mode) and user menu (settings, logout). Auth layout (`/_layout.tsx`) wraps this and redirects anonymous visitors to `/login`.
+
+<AnnotatedCode
+  id="ac-sidebar"
+  title="Role-gated nav"
+  filename="frontend/src/components/Sidebar/AppSidebar.tsx"
+  language="ts"
+  code={
+    'const baseItems: Item[] = [\n  { icon: Home, title: "Dashboard", path: "/" },\n  { icon: Briefcase, title: "Items", path: "/items" },\n]\n\nexport function AppSidebar() {\n  const { user: currentUser } = useAuth()\n  const items = currentUser?.is_superuser\n    ? [...baseItems, { icon: Users, title: "Admin", path: "/admin" }]\n    : baseItems\n'
+  }
+  annotations={[
+    {
+      lines: "1-4",
+      label: "Everyone",
+      note: "Home is a greeting. Items is the only end-user catalog.",
+    },
+    {
+      lines: "8-10",
+      label: "Operators",
+      note: "Admin is not a separate app — it is one extra nav item when is_superuser is true on /users/me.",
+    },
+  ]}
+/>
+
+## Flows as jobs (end to end)
+
+| Flow | Actor | Meant to do |
+| --- | --- | --- |
+| Signup | Anyone | Create a member account so they can receive a JWT later. |
+| Login | Member | Prove password, store JWT, enter the shell. |
+| Recover / reset | Anyone with email | Regain access without an admin. |
+| Dashboard | Signed-in | Confirm session; no business data. |
+| Items | Signed-in | Create/list shared notes; change only what you own (or all if admin). |
+| Settings | Signed-in | Keep identity current or leave the product. |
+| Admin | Superuser | Provision, disable, promote, or remove people. |
+| Email | System | Deliver reset and (optional) new-account passwords. |
+
+Private routes under `backend/app/api/routes/private.py` exist only when `FASTAPI_ENV=development` for tests — not a product flow.
+
+## What this is not (yet)
+
+No bookmarks, no read/unread flags, no per-user item visibility, no comments. List items is a **site-wide** catalog. If the assignment is "read status and bookmark," this template is the auth + CRUD chassis those features should hang on: likely extra columns or a join table from `User` to `Item`, plus UI on the Items table — not a new app.
+
+## Review and agent handoff
+
+Comment on sections in the local Plan UI. Agent-targeted comments should change code **and** this MDX so the product map stays true.
