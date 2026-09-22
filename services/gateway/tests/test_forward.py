@@ -28,6 +28,13 @@ CALLER = Caller(
     display_name="Ada",
 )
 Handler = Callable[[httpx.Request], httpx.Response]
+SHOW = {
+    "name": "Show",
+    "venue_id": "22222222-2222-2222-2222-222222222222",
+    "performer_id": "33333333-3333-3333-3333-333333333333",
+    "time": "2026-01-01T00:00:00Z",
+    "price": 10,
+}
 
 
 def _client(monkeypatch: pytest.MonkeyPatch, handler: Handler) -> TestClient:
@@ -65,7 +72,7 @@ def test_resolve_403_is_returned_and_events_are_not_called(
 
     response = _client(monkeypatch, handler).post(
         "/api/v1/events",
-        json={"name": "Show"},
+        json=SHOW,
         headers={"Authorization": "Bearer token"},
     )
 
@@ -85,7 +92,7 @@ def test_resolve_400_inactive_user_is_returned_and_events_are_not_called(
 
     response = _client(monkeypatch, handler).post(
         "/api/v1/events",
-        json={"name": "Show"},
+        json=SHOW,
         headers={"Authorization": "Bearer token"},
     )
 
@@ -139,7 +146,7 @@ def test_create_event_forwards_body_and_caller_without_authorization(
 
     response = _client(monkeypatch, handler).post(
         "/api/v1/events",
-        json={"name": "Show"},
+        json=SHOW,
         headers={"Authorization": "Bearer token"},
     )
 
@@ -148,7 +155,7 @@ def test_create_event_forwards_body_and_caller_without_authorization(
     forwarded = seen[1]
     assert forwarded.url.host == "event.test"
     assert forwarded.url.path == "/events"
-    assert json.loads(forwarded.content) == {"name": "Show"}
+    assert json.loads(forwarded.content) == SHOW
     assert forwarded.headers[INTERNAL_KEY_HEADER] == "test-internal-key"
     assert forwarded.headers[CALLER_HEADER] == encode_caller(CALLER)
     assert "authorization" not in forwarded.headers
@@ -164,7 +171,7 @@ def test_event_service_401_becomes_service_unavailable(
 
     response = _client(monkeypatch, handler).post(
         "/api/v1/events",
-        json={"name": "Show"},
+        json=SHOW,
         headers={"Authorization": "Bearer token"},
     )
 
@@ -180,7 +187,7 @@ def test_event_service_404_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None
 
     response = _client(monkeypatch, handler).post(
         "/api/v1/events",
-        json={"name": "Show"},
+        json=SHOW,
         headers={"Authorization": "Bearer token"},
     )
 

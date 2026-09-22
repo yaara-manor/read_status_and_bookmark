@@ -28,9 +28,11 @@ from contracts.messages import (
     load_message,
 )
 from contracts.users import (
+    DevUserCreate,
     LoginRequest,
     Message,
     NewPassword,
+    RecoveryEmail,
     Token,
     UpdatePassword,
     UserCreate,
@@ -48,6 +50,7 @@ __all__ = [
     "INTERNAL_KEY_HEADER",
     "STREAM",
     "Caller",
+    "DevUserCreate",
     "EventBookmarkUpdate",
     "EventCreate",
     "EventDetail",
@@ -58,6 +61,7 @@ __all__ = [
     "Message",
     "NewPassword",
     "PerformerGenre",
+    "RecoveryEmail",
     "TicketAvailability",
     "TicketPublic",
     "Token",

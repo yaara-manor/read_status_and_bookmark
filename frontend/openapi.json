@@ -38,7 +38,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Token" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -67,7 +71,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -85,10 +93,30 @@
         "tags": ["auth"],
         "summary": "Recover Password",
         "operationId": "auth-recover_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecoveryEmail" }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
           }
         }
       }
@@ -109,7 +137,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -127,30 +159,29 @@
         "tags": ["users"],
         "summary": "Read Users",
         "operationId": "users-read_users",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
-          }
-        },
-        "security": [{ "HTTPBearer": [] }]
-      },
-      "post": {
-        "tags": ["users"],
-        "summary": "Create User",
-        "operationId": "users-create_user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UserCreate" }
-            }
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 0, "title": "Skip" }
           },
-          "required": true
-        },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 100, "title": "Limit" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UsersPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -160,8 +191,39 @@
               }
             }
           }
+        }
+      },
+      "post": {
+        "tags": ["users"],
+        "summary": "Create User",
+        "operationId": "users-create_user",
+        "security": [{ "HTTPBearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreate" }
+            }
+          }
         },
-        "security": [{ "HTTPBearer": [] }]
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/users/me": {
@@ -172,7 +234,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
           }
         },
         "security": [{ "HTTPBearer": [] }]
@@ -184,7 +250,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
           }
         },
         "security": [{ "HTTPBearer": [] }]
@@ -204,7 +274,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -234,7 +308,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -259,13 +337,17 @@
             "name": "user_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "User Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "User Id" }
           }
         ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -287,7 +369,7 @@
             "name": "user_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "User Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "User Id" }
           }
         ],
         "requestBody": {
@@ -301,7 +383,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -323,13 +409,17 @@
             "name": "user_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "User Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "User Id" }
           }
         ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -347,25 +437,71 @@
         "tags": ["events"],
         "summary": "Read Events",
         "operationId": "events-read_events",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 0, "title": "Skip" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 100, "title": "Limit" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventsPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
           }
-        },
-        "security": [{ "HTTPBearer": [] }]
+        }
       },
       "post": {
         "tags": ["events"],
         "summary": "Create Event",
         "operationId": "events-create_event",
+        "security": [{ "HTTPBearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EventCreate" }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
           }
-        },
-        "security": [{ "HTTPBearer": [] }]
+        }
       }
     },
     "/api/v1/events/bookmarked": {
@@ -373,13 +509,39 @@
         "tags": ["events"],
         "summary": "Read Bookmarked Events",
         "operationId": "events-read_bookmarked_events",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 0, "title": "Skip" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 100, "title": "Limit" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventsPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
           }
-        },
-        "security": [{ "HTTPBearer": [] }]
+        }
       }
     },
     "/api/v1/events/{id}": {
@@ -393,13 +555,17 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "Id" }
           }
         ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventDetail" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -421,7 +587,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "Id" }
           }
         ],
         "requestBody": {
@@ -435,7 +601,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -457,13 +627,17 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "Id" }
           }
         ],
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Message" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -487,7 +661,7 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string", "title": "Id" }
+            "schema": { "type": "string", "format": "uuid", "title": "Id" }
           }
         ],
         "requestBody": {
@@ -501,7 +675,11 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EventPublic" }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -519,10 +697,30 @@
         "tags": ["dev"],
         "summary": "Create User",
         "operationId": "dev-create_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DevUserCreate" }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": { "application/json": { "schema": {} } }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserPublic" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
           }
         }
       }
@@ -530,6 +728,26 @@
   },
   "components": {
     "schemas": {
+      "DevUserCreate": {
+        "properties": {
+          "email": { "type": "string", "format": "email", "title": "Email" },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": { "type": "string", "title": "Full Name" },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": ["email", "password", "full_name"],
+        "title": "DevUserCreate"
+      },
       "EventBookmarkUpdate": {
         "properties": {
           "is_bookmarked": { "type": "boolean", "title": "Is Bookmarked" }
@@ -537,6 +755,170 @@
         "type": "object",
         "required": ["is_bookmarked"],
         "title": "EventBookmarkUpdate"
+      },
+      "EventCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Description"
+          },
+          "venue_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Venue Id"
+          },
+          "performer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Performer Id"
+          },
+          "time": { "type": "string", "format": "date-time", "title": "Time" },
+          "price": { "type": "number", "minimum": 0.0, "title": "Price" }
+        },
+        "type": "object",
+        "required": ["name", "venue_id", "performer_id", "time", "price"],
+        "title": "EventCreate"
+      },
+      "EventDetail": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Description"
+          },
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "venue_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Venue Id"
+          },
+          "performer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Performer Id"
+          },
+          "time": { "type": "string", "format": "date-time", "title": "Time" },
+          "created_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Created At"
+          },
+          "creator": { "type": "string", "title": "Creator" },
+          "is_read": {
+            "type": "boolean",
+            "title": "Is Read",
+            "default": false
+          },
+          "is_bookmarked": {
+            "type": "boolean",
+            "title": "Is Bookmarked",
+            "default": false
+          },
+          "tickets": {
+            "items": { "$ref": "#/components/schemas/TicketPublic" },
+            "type": "array",
+            "title": "Tickets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "owner_id",
+          "venue_id",
+          "performer_id",
+          "time",
+          "creator",
+          "tickets"
+        ],
+        "title": "EventDetail"
+      },
+      "EventPublic": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Description"
+          },
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "venue_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Venue Id"
+          },
+          "performer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Performer Id"
+          },
+          "time": { "type": "string", "format": "date-time", "title": "Time" },
+          "created_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Created At"
+          },
+          "creator": { "type": "string", "title": "Creator" },
+          "is_read": {
+            "type": "boolean",
+            "title": "Is Read",
+            "default": false
+          },
+          "is_bookmarked": {
+            "type": "boolean",
+            "title": "Is Bookmarked",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "owner_id",
+          "venue_id",
+          "performer_id",
+          "time",
+          "creator"
+        ],
+        "title": "EventPublic"
       },
       "EventUpdate": {
         "properties": {
@@ -572,6 +954,19 @@
         "type": "object",
         "title": "EventUpdate"
       },
+      "EventsPublic": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/EventPublic" },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": { "type": "integer", "title": "Count" }
+        },
+        "type": "object",
+        "required": ["data", "count"],
+        "title": "EventsPublic"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -597,6 +992,12 @@
         "required": ["email", "password"],
         "title": "LoginRequest"
       },
+      "Message": {
+        "properties": { "message": { "type": "string", "title": "Message" } },
+        "type": "object",
+        "required": ["message"],
+        "title": "Message"
+      },
       "NewPassword": {
         "properties": {
           "token": { "type": "string", "title": "Token" },
@@ -610,6 +1011,49 @@
         "type": "object",
         "required": ["token", "new_password"],
         "title": "NewPassword"
+      },
+      "RecoveryEmail": {
+        "properties": { "email": { "type": "string", "title": "Email" } },
+        "type": "object",
+        "required": ["email"],
+        "title": "RecoveryEmail"
+      },
+      "TicketAvailability": {
+        "type": "string",
+        "enum": ["AVAILABLE", "BOOKED"],
+        "title": "TicketAvailability"
+      },
+      "TicketPublic": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "row": { "type": "integer", "title": "Row" },
+          "seat": { "type": "integer", "title": "Seat" },
+          "price": { "type": "number", "title": "Price" },
+          "availability": { "$ref": "#/components/schemas/TicketAvailability" },
+          "user_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "User Id"
+          }
+        },
+        "type": "object",
+        "required": ["id", "row", "seat", "price", "availability"],
+        "title": "TicketPublic"
+      },
+      "Token": {
+        "properties": {
+          "access_token": { "type": "string", "title": "Access Token" },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": ["access_token"],
+        "title": "Token"
       },
       "UpdatePassword": {
         "properties": {
@@ -665,6 +1109,44 @@
         "type": "object",
         "required": ["email", "password"],
         "title": "UserCreate"
+      },
+      "UserPublic": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "email",
+            "title": "Email"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "is_superuser": {
+            "type": "boolean",
+            "title": "Is Superuser",
+            "default": false
+          },
+          "full_name": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Full Name"
+          },
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "created_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": ["email", "id"],
+        "title": "UserPublic"
       },
       "UserRegister": {
         "properties": {
@@ -746,6 +1228,19 @@
         },
         "type": "object",
         "title": "UserUpdateMe"
+      },
+      "UsersPublic": {
+        "properties": {
+          "data": {
+            "items": { "$ref": "#/components/schemas/UserPublic" },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": { "type": "integer", "title": "Count" }
+        },
+        "type": "object",
+        "required": ["data", "count"],
+        "title": "UsersPublic"
       },
       "ValidationError": {
         "properties": {

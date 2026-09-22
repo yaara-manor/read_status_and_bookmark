@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { authLoginData, authLoginErrors, authLoginResponses, authRecoverPasswordData, authRecoverPasswordResponses, authRegisterData, authRegisterErrors, authRegisterResponses, authResetPasswordData, authResetPasswordErrors, authResetPasswordResponses, devCreateUserData, devCreateUserResponses, eventsCreateEventData, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadBookmarkedEventsData, eventsReadBookmarkedEventsResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsResponses, eventsSetEventBookmarkData, eventsSetEventBookmarkErrors, eventsSetEventBookmarkResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, healthHealthCheckData, healthHealthCheckResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
+import type { authLoginData, authLoginErrors, authLoginResponses, authRecoverPasswordData, authRecoverPasswordErrors, authRecoverPasswordResponses, authRegisterData, authRegisterErrors, authRegisterResponses, authResetPasswordData, authResetPasswordErrors, authResetPasswordResponses, devCreateUserData, devCreateUserErrors, devCreateUserResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadBookmarkedEventsData, eventsReadBookmarkedEventsErrors, eventsReadBookmarkedEventsResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsSetEventBookmarkData, eventsSetEventBookmarkErrors, eventsSetEventBookmarkResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, healthHealthCheckData, healthHealthCheckResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -65,11 +65,15 @@ export class AuthService {
     /**
      * Recover Password
      */
-    public static recoverPassword<ThrowOnError extends boolean = true>(options?: Options<authRecoverPasswordData, ThrowOnError>) {
-        return (options?.client ?? client).post<authRecoverPasswordResponses, unknown, ThrowOnError>({
+    public static recoverPassword<ThrowOnError extends boolean = true>(options: Options<authRecoverPasswordData, ThrowOnError>) {
+        return (options.client ?? client).post<authRecoverPasswordResponses, authRecoverPasswordErrors, ThrowOnError>({
             responseType: 'json',
             url: '/api/v1/auth/password-recovery',
-            ...options
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
     
@@ -94,7 +98,7 @@ export class UsersService {
      * Read Users
      */
     public static readUsers<ThrowOnError extends boolean = true>(options?: Options<usersReadUsersData, ThrowOnError>) {
-        return (options?.client ?? client).get<usersReadUsersResponses, unknown, ThrowOnError>({
+        return (options?.client ?? client).get<usersReadUsersResponses, usersReadUsersErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/users',
@@ -220,7 +224,7 @@ export class EventsService {
      * Read Events
      */
     public static readEvents<ThrowOnError extends boolean = true>(options?: Options<eventsReadEventsData, ThrowOnError>) {
-        return (options?.client ?? client).get<eventsReadEventsResponses, unknown, ThrowOnError>({
+        return (options?.client ?? client).get<eventsReadEventsResponses, eventsReadEventsErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/events',
@@ -231,12 +235,16 @@ export class EventsService {
     /**
      * Create Event
      */
-    public static createEvent<ThrowOnError extends boolean = true>(options?: Options<eventsCreateEventData, ThrowOnError>) {
-        return (options?.client ?? client).post<eventsCreateEventResponses, unknown, ThrowOnError>({
+    public static createEvent<ThrowOnError extends boolean = true>(options: Options<eventsCreateEventData, ThrowOnError>) {
+        return (options.client ?? client).post<eventsCreateEventResponses, eventsCreateEventErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/events',
-            ...options
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
     
@@ -244,7 +252,7 @@ export class EventsService {
      * Read Bookmarked Events
      */
     public static readBookmarkedEvents<ThrowOnError extends boolean = true>(options?: Options<eventsReadBookmarkedEventsData, ThrowOnError>) {
-        return (options?.client ?? client).get<eventsReadBookmarkedEventsResponses, unknown, ThrowOnError>({
+        return (options?.client ?? client).get<eventsReadBookmarkedEventsResponses, eventsReadBookmarkedEventsErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/events/bookmarked',
@@ -313,11 +321,15 @@ export class DevService {
     /**
      * Create User
      */
-    public static createUser<ThrowOnError extends boolean = true>(options?: Options<devCreateUserData, ThrowOnError>) {
-        return (options?.client ?? client).post<devCreateUserResponses, unknown, ThrowOnError>({
+    public static createUser<ThrowOnError extends boolean = true>(options: Options<devCreateUserData, ThrowOnError>) {
+        return (options.client ?? client).post<devCreateUserResponses, devCreateUserErrors, ThrowOnError>({
             responseType: 'json',
             url: '/api/v1/dev/users',
-            ...options
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 }
