@@ -67,12 +67,29 @@ os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
 # Workspace installs backend's app package first. This service is also named app.
 sys.path.insert(0, str(_SERVICE_DIR))
 
-from contracts import INTERNAL_KEY_HEADER  # noqa: E402
+from contracts import (  # noqa: E402
+    CALLER_HEADER,
+    INTERNAL_KEY_HEADER,
+    Caller,
+    encode_caller,
+)
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlmodel import Session  # noqa: E402
 
-from app.core.db import engine  # noqa: E402
+from app.core.db import engine, init_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import User  # noqa: E402
+from app.outbox import display_name  # noqa: E402
+
+
+def caller_headers(user: User) -> dict[str, str]:
+    caller = Caller(
+        id=user.id,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+        display_name=display_name(user),
+    )
+    return {CALLER_HEADER: encode_caller(caller)}
 
 
 def _upgrade_test_db() -> None:
@@ -85,6 +102,7 @@ def _upgrade_test_db() -> None:
 def db() -> Generator[Session]:
     _upgrade_test_db()
     with Session(engine) as session:
+        init_db(session)
         yield session
 
 

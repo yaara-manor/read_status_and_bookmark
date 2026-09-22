@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from contracts import INTERNAL_KEY_HEADER
+from contracts import CALLER_HEADER, INTERNAL_KEY_HEADER, Caller, decode_caller
 from fastapi import Depends, Header, HTTPException
 from sqlmodel import Session
 
@@ -22,3 +22,25 @@ def require_internal_key(
 ) -> None:
     if internal_key != settings.INTERNAL_API_KEY:
         raise HTTPException(status_code=401, detail="invalid internal key")
+
+
+def require_caller(
+    caller_header: Annotated[str | None, Header(alias=CALLER_HEADER)] = None,
+) -> Caller:
+    if not caller_header:
+        raise HTTPException(status_code=401, detail="missing caller")
+    try:
+        caller = decode_caller(caller_header)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="missing caller")
+    if not caller.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return caller
+
+
+def require_superuser(caller: Annotated[Caller, Depends(require_caller)]) -> Caller:
+    if not caller.is_superuser:
+        raise HTTPException(
+            status_code=403, detail="The user doesn't have enough privileges"
+        )
+    return caller
