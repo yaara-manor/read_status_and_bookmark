@@ -28,6 +28,8 @@ extend-ignore-re = [
     "@[a-zA-Z0-9](?:-?[a-zA-Z0-9])*",
     # Name of the package in the PR title
     "Bump certifi ",
+    # Argon2 hashes contain accidental letter pairs
+    '''\$argon2id\$\S+''',
 ]
 
 [tool.typos.default.extend-identifiers]

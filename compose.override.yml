@@ -42,6 +42,10 @@ services:
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
 
+  event-crud:
+    environment:
+      FASTAPI_ENV: "development"
+
   gateway:
     ports:
       - "8000:8000"
