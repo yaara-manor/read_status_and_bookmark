@@ -73,7 +73,7 @@ def register(session: SessionDep, user_in: UserRegister) -> UserPublic:
     )
     session.commit()
     session.refresh(created)
-    return created
+    return UserPublic.model_validate(created.model_dump())
 
 
 @router.post("/password-recovery")

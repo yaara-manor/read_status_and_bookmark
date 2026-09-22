@@ -1,2 +1,2 @@
 .env
-!backend/app/frontend/
+!services/gateway/app/frontend/

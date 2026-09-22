@@ -9,8 +9,15 @@ import pytest
 from contracts import CALLER_HEADER, INTERNAL_KEY_HEADER, Caller, encode_caller
 from fastapi.testclient import TestClient
 
-# Workspace editable installs put backend/ ahead of services/gateway on sys.path.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# Sibling services are also named app. Drop them so this tree wins.
+_service_dir = Path(__file__).resolve().parents[1]
+_others = {
+    (_service_dir.parent / name).resolve()
+    for name in ("user-crud", "event-crud", "gateway")
+}
+_others.discard(_service_dir.resolve())
+sys.path[:] = [entry for entry in sys.path if Path(entry).resolve() not in _others]
+sys.path.insert(0, str(_service_dir))
 
 os.environ["PROJECT_NAME"] = "Ticketmaster"
 os.environ["FRONTEND_HOST"] = "http://localhost:5173"
