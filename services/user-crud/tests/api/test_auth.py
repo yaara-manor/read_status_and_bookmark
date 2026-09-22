@@ -1,10 +1,13 @@
 import uuid
 
+import pytest
 from contracts import INTERNAL_KEY_HEADER
 from fastapi.testclient import TestClient
 from sqlmodel import Session, func, select
 
+from app.core.config import settings
 from app.core.db import engine
+from app.email import generate_password_reset_token
 from app.models import Outbox, User
 
 _PASSWORD = "password123"
@@ -125,6 +128,79 @@ def test_password_recovery_unknown_email_returns_same_message(
     )
     assert response.status_code == 200
     assert response.json()["message"] == _RECOVERY_MESSAGE
+
+
+def test_password_recovery_known_email_sends_and_returns_same_message(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sent: list[str] = []
+
+    def _send(
+        _self: object,
+        to: str | None = None,
+        smtp: object = None,
+        **_kwargs: object,
+    ) -> str:
+        if to is not None and smtp is not None:
+            sent.append(to)
+        return "ok"
+
+    monkeypatch.setattr(settings, "SMTP_HOST", "smtp.example.com")
+    monkeypatch.setattr(settings, "EMAILS_FROM_EMAIL", "from@example.com")
+    monkeypatch.setattr(settings, "EMAILS_FROM_NAME", "Box Office")
+    monkeypatch.setattr("emails.message.Message.send", _send)
+    email = _email()
+    _insert_user(email=email)
+    before = _outbox_count()
+    response = client.post("/auth/password-recovery", json={"email": email})
+    assert response.status_code == 200
+    assert response.json()["message"] == _RECOVERY_MESSAGE
+    assert sent == [email]
+    assert _outbox_count() == before
+
+
+def test_reset_password_unknown_email_is_400(client: TestClient) -> None:
+    token = generate_password_reset_token(email=_email())
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "new_password": "newpassword1"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Invalid token"
+
+
+def test_reset_password_inactive_user_is_400(client: TestClient) -> None:
+    email = _email()
+    _insert_user(email=email, is_active=False)
+    before_hash = _PASSWORD_HASH
+    token = generate_password_reset_token(email=email)
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "new_password": "newpassword1"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Inactive user"
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.email == email)).one()
+        assert user.hashed_password == before_hash
+
+
+def test_reset_password_updates_password(client: TestClient) -> None:
+    email = _email()
+    _insert_user(email=email)
+    token = generate_password_reset_token(email=email)
+    response = client.post(
+        "/auth/reset-password",
+        json={"token": token, "new_password": "newpassword1"},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Password updated successfully"
+    success = client.post(
+        "/auth/login", json={"email": email, "password": "newpassword1"}
+    )
+    assert success.status_code == 200
+    failure = client.post("/auth/login", json={"email": email, "password": _PASSWORD})
+    assert failure.status_code == 400
 
 
 def test_reset_password_bad_token_is_400_and_writes_no_outbox(

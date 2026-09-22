@@ -56,6 +56,24 @@ def test_garbage_token_is_403(client: TestClient) -> None:
     assert response.json()["detail"] == "Could not validate credentials"
 
 
+def test_token_for_deleted_user_is_403(client: TestClient) -> None:
+    email = _email()
+    user = _insert_user(email=email)
+    login = client.post("/auth/login", json={"email": email, "password": _PASSWORD})
+    assert login.status_code == 200
+    with Session(engine) as session:
+        row = session.get(User, user.id)
+        assert row is not None
+        session.delete(row)
+        session.commit()
+    response = client.post(
+        "/internal/resolve-token",
+        json={"token": login.json()["access_token"]},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Could not validate credentials"
+
+
 def test_inactive_user_token_is_400(client: TestClient) -> None:
     email = _email()
     user = _insert_user(email=email)

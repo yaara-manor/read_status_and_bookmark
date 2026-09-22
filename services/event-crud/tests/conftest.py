@@ -4,6 +4,7 @@ import sys
 import uuid
 from collections.abc import Generator
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from alembic import command
@@ -63,7 +64,28 @@ def _use_test_database() -> None:
     os.environ["DATABASE_URL"] = url.render_as_string(hide_password=False)
 
 
+def _use_private_redis(index: int) -> None:
+    # Lifespan consumer must not XACK group event-crud on Redis DB 0.
+    file_env = _parse_env_file(_ENV_FILE)
+    raw = (
+        os.environ.get("REDIS_URL")
+        or file_env.get("REDIS_URL")
+        or "redis://localhost:6379/0"
+    )
+    parts = urlsplit(raw)
+    os.environ["REDIS_URL"] = urlunsplit(
+        (
+            parts.scheme or "redis",
+            parts.netloc,
+            f"/{index}",
+            parts.query,
+            parts.fragment,
+        )
+    )
+
+
 _use_test_database()
+_use_private_redis(14)
 os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
 # Workspace installs backend's app package first. This service is also named app.
 sys.path.insert(0, str(_SERVICE_DIR))

@@ -1,6 +1,6 @@
 import uuid
 
-from contracts import Caller, TicketAvailability
+from contracts import CALLER_HEADER, Caller, TicketAvailability
 from fastapi.testclient import TestClient
 from sqlmodel import Session, func, select
 
@@ -36,6 +36,12 @@ def _read_link_count(db: Session, user_id: uuid.UUID, event_id: uuid.UUID) -> in
         .select_from(EventReadLink)
         .where(EventReadLink.user_id == user_id, EventReadLink.event_id == event_id)
     ).one()
+
+
+def test_invalid_caller_is_401(client: TestClient) -> None:
+    response = client.get("/events", headers={CALLER_HEADER: "%%%"})
+    assert response.status_code == 401
+    assert response.json()["detail"] == "missing caller"
 
 
 def test_missing_caller(client: TestClient) -> None:
