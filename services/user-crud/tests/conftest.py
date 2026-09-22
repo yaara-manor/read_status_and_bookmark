@@ -67,6 +67,7 @@ os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
 # Workspace installs backend's app package first. This service is also named app.
 sys.path.insert(0, str(_SERVICE_DIR))
 
+from contracts import INTERNAL_KEY_HEADER  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlmodel import Session  # noqa: E402
 
@@ -89,5 +90,6 @@ def db() -> Generator[Session]:
 
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient]:
-    with TestClient(app) as c:
+    headers = {INTERNAL_KEY_HEADER: os.environ["INTERNAL_API_KEY"]}
+    with TestClient(app, headers=headers) as c:
         yield c
