@@ -64,7 +64,13 @@ def _use_test_database() -> None:
 
 _use_test_database()
 os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
-# Workspace installs backend's app package first. This service is also named app.
+# Sibling services are also named app. Drop them so this tree wins.
+_others = {
+    (_SERVICE_DIR.parent / name).resolve()
+    for name in ("user-crud", "event-crud", "gateway")
+}
+_others.discard(_SERVICE_DIR.resolve())
+sys.path[:] = [entry for entry in sys.path if Path(entry).resolve() not in _others]
 sys.path.insert(0, str(_SERVICE_DIR))
 
 from contracts import (  # noqa: E402

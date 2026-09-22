@@ -61,7 +61,7 @@ Click the **Use this template** button at the top of this page to create a new r
 
 ## Backend Development
 
-Backend docs: [backend/README.md](./backend/README.md).
+Backend docs: [services/user-crud](./services/user-crud) and [services/event-crud](./services/event-crud).
 
 ## Frontend Development
 

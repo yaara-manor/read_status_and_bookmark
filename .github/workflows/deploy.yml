@@ -39,8 +39,9 @@ jobs:
         with:
           version: "latest-known"
       - name: Prepare database
-        run: uv run bash scripts/prestart.sh
-        working-directory: backend
+        run: |
+          (cd services/user-crud && uv run bash scripts/prestart.sh)
+          (cd services/event-crud && uv run bash scripts/prestart.sh)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           PROJECT_NAME: ${{ vars.PROJECT_NAME }}
@@ -48,7 +49,11 @@ jobs:
           FIRST_SUPERUSER: ${{ vars.FIRST_SUPERUSER }}
           FIRST_SUPERUSER_PASSWORD: ${{ secrets.FIRST_SUPERUSER_PASSWORD }}
       - name: Deploy to FastAPI Cloud
+        working-directory: services/gateway
         run: uv run fastapi deploy
         env:
           FASTAPI_CLOUD_TOKEN: ${{ secrets.FASTAPI_CLOUD_TOKEN }}
           FASTAPI_CLOUD_APP_ID: ${{ secrets.FASTAPI_CLOUD_APP_ID }}
+          USER_CRUD_URL: ${{ secrets.USER_CRUD_URL }}
+          EVENT_CRUD_URL: ${{ secrets.EVENT_CRUD_URL }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}

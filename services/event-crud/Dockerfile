@@ -25,7 +25,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=backend/pyproject.toml,target=backend/pyproject.toml \
     --mount=type=bind,source=packages/contracts,target=packages/contracts \
     --mount=type=bind,source=services/user-crud/pyproject.toml,target=services/user-crud/pyproject.toml \
     --mount=type=bind,source=services/event-crud/pyproject.toml,target=services/event-crud/pyproject.toml \
@@ -45,7 +44,6 @@ COPY ./packages/contracts /app/packages/contracts
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=backend/pyproject.toml,target=backend/pyproject.toml \
     --mount=type=bind,source=services/user-crud/pyproject.toml,target=services/user-crud/pyproject.toml \
     --mount=type=bind,source=services/gateway/pyproject.toml,target=services/gateway/pyproject.toml \
     uv sync --frozen --package event-crud
