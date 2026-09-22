@@ -33,7 +33,8 @@ jobs:
       with:
         filters: |
           changed:
-            - backend/**
+            - services/**
+            - packages/contracts/**
             - frontend/**
             - .env
             - compose*.yml
@@ -70,13 +71,13 @@ jobs:
       with:
         version: "latest-known"
     - run: uv sync
-      working-directory: backend
     - run: bun ci
       working-directory: frontend
     - run: bash scripts/generate-client.sh
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
-    - run: docker compose run --rm backend bash scripts/prestart.sh
+    - run: docker compose run --rm user-crud bash scripts/prestart.sh
+    - run: docker compose run --rm event-crud bash scripts/prestart.sh
     - name: Run Playwright tests
       run: docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
     - run: docker compose down -v --remove-orphans

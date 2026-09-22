@@ -26,20 +26,36 @@ jobs:
         with:
           version: "latest-known"
       - run: docker compose down -v --remove-orphans
-      - run: docker compose up -d --wait db mailpit
-      - name: Migrate DB
-        run: uv run bash scripts/prestart.sh
-        working-directory: backend
-      - name: Run tests
-        run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
-        working-directory: backend
+      - run: docker compose up -d --wait db redis mailpit
+      - name: Test user-crud
+        working-directory: services/user-crud
+        run: |
+          uv run coverage run -m pytest
+          uv run coverage html --title "Coverage for ${{ github.sha }}"
+      - name: Test event-crud
+        working-directory: services/event-crud
+        run: |
+          uv run coverage run -m pytest
+          uv run coverage html --title "Coverage for ${{ github.sha }}"
+      - name: Test gateway
+        working-directory: services/gateway
+        run: uv run pytest
       - run: docker compose down -v --remove-orphans
-      - name: Store coverage files
+      - name: Store user-crud coverage files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-html
-          path: backend/htmlcov
+          path: services/user-crud/htmlcov
           include-hidden-files: true
-      - name: Coverage report
+      - name: Store event-crud coverage files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-html-event
+          path: services/event-crud/htmlcov
+          include-hidden-files: true
+      - name: User CRUD coverage report
         run: uv run coverage report --fail-under=90
-        working-directory: backend
+        working-directory: services/user-crud
+      - name: Event CRUD coverage report
+        run: uv run coverage report --fail-under=90
+        working-directory: services/event-crud
