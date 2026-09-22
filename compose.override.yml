@@ -31,42 +31,22 @@ services:
     ports:
       - "8080:8080"
 
-  backend:
+  redis:
     ports:
-      - "8000:8000"
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    # command: sleep infinity  # Infinite loop to keep container alive doing nothing
-    command:
-      - fastapi
-      - dev
-      - --host
-      - "0.0.0.0"
-    develop:
-      watch:
-        - path: ./backend
-          action: sync
-          target: /app/backend
-          ignore:
-            - .venv
-        - path: ./backend/pyproject.toml
-          action: rebuild
-        - path: ./frontend
-          action: rebuild
-          ignore:
-            - ./frontend/node_modules
-            - ./frontend/dist
-            - ./frontend/blob-report
-            - ./frontend/test-results
-    # TODO: remove once coverage is done locally
-    volumes:
-      - ./backend/htmlcov:/app/backend/htmlcov
+      - "6379:6379"
+
+  user-crud:
     environment:
       FASTAPI_ENV: "development"
       SMTP_HOST: "mailpit"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
+
+  gateway:
+    ports:
+      - "8000:8000"
+    environment:
+      FASTAPI_ENV: "development"
 
   mailpit:
     image: axllent/mailpit
@@ -82,13 +62,13 @@ services:
         - NODE_ENV=production
     ipc: host
     depends_on:
-      - backend
+      - gateway
       - mailpit
     environment:
       - FIRST_SUPERUSER=${FIRST_SUPERUSER:?Variable not set}
       - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD:?Variable not set}
-      - PLAYWRIGHT_BASE_URL=http://backend:8000
-      - VITE_API_URL=http://backend:8000
+      - PLAYWRIGHT_BASE_URL=http://gateway:8000
+      - VITE_API_URL=http://gateway:8000
       - MAILPIT_HOST=http://mailpit:8025
       # For the reports when run locally
       - PLAYWRIGHT_HTML_HOST=0.0.0.0

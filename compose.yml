@@ -46,11 +46,17 @@ services:
       # Define the port inside of the Docker service to use
       - traefik.http.services.adminer.loadbalancer.server.port=8080
 
-  backend:
-    image: backend:latest
+  redis:
+    image: redis:7
+
+  user-crud:
+    image: user-crud:latest
     depends_on:
       db:
         condition: service_healthy
+        restart: true
+      redis:
+        condition: service_started
         restart: true
     environment:
       PROJECT_NAME: ${PROJECT_NAME:?Variable not set}
@@ -62,27 +68,73 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL}
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Variable not set}@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Variable not set}
       SENTRY_DSN: ${SENTRY_DSN:-}
-
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
-
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: services/user-crud/Dockerfile
+
+  event-crud:
+    image: event-crud:latest
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_started
+        restart: true
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Variable not set}@db:5432/app
+      REDIS_URL: redis://redis:6379/0
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Variable not set}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    build:
+      context: .
+      dockerfile: services/event-crud/Dockerfile
+
+  gateway:
+    image: gateway:latest
+    depends_on:
+      user-crud:
+        condition: service_healthy
+      event-crud:
+        condition: service_healthy
+    environment:
+      USER_CRUD_URL: http://user-crud:8000
+      EVENT_CRUD_URL: http://event-crud:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Variable not set}
+      FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
+      PROJECT_NAME: ${PROJECT_NAME:?Variable not set}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
     labels:
       # Enable Traefik for this service
       - traefik.enable=true
 
       # Define the port inside of the Docker service to use
-      - traefik.http.services.backend.loadbalancer.server.port=8000
+      - traefik.http.services.gateway.loadbalancer.server.port=8000
 
       # Route HTTP traffic for this domain
-      - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`)
-      - traefik.http.routers.backend-http.entrypoints=http
+      - traefik.http.routers.gateway-http.rule=Host(`${DOMAIN:-localhost}`)
+      - traefik.http.routers.gateway-http.entrypoints=http
 
 volumes:
   app-db-data:
