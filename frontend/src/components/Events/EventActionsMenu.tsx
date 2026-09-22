@@ -1,7 +1,7 @@
 import { EllipsisVertical } from "lucide-react"
 import { useState } from "react"
 
-import type { ItemPublic } from "@/client"
+import type { EventPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -9,33 +9,41 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import useAuth from "@/hooks/useAuth"
-import DeleteItem from "../Items/DeleteItem"
-import EditItem from "../Items/EditItem"
+import DeleteEvent from "./DeleteEvent"
+import EditEvent from "./EditEvent"
 
-interface ItemActionsMenuProps {
-  item: ItemPublic
+interface EventActionsMenuProps {
+  event: EventPublic
   onDeleted?: () => void
 }
 
-export const ItemActionsMenu = ({ item, onDeleted }: ItemActionsMenuProps) => {
+export const EventActionsMenu = ({
+  event,
+  onDeleted,
+}: EventActionsMenuProps) => {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
 
-  if (!user || (item.owner_id !== user.id && !user.is_superuser)) {
+  if (!user || (event.owner_id !== user.id && !user.is_superuser)) {
     return null
   }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Item actions">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Event actions"
+          onClick={(e) => e.stopPropagation()}
+        >
           <EllipsisVertical />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <EditItem item={item} onSuccess={() => setOpen(false)} />
-        <DeleteItem
-          id={item.id}
+        <EditEvent event={event} onSuccess={() => setOpen(false)} />
+        <DeleteEvent
+          id={event.id}
           onSuccess={() => {
             setOpen(false)
             onDeleted?.()

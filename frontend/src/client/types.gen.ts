@@ -35,19 +35,9 @@ export type Body_login_login_access_token = {
 };
 
 /**
- * HTTPValidationError
+ * EventBookmarkUpdate
  */
-export type HTTPValidationError = {
-    /**
-     * Detail
-     */
-    detail?: Array<ValidationError>;
-};
-
-/**
- * ItemBookmarkUpdate
- */
-export type ItemBookmarkUpdate = {
+export type EventBookmarkUpdate = {
     /**
      * Is Bookmarked
      */
@@ -55,27 +45,43 @@ export type ItemBookmarkUpdate = {
 };
 
 /**
- * ItemCreate
+ * EventCreate
  */
-export type ItemCreate = {
+export type EventCreate = {
     /**
-     * Title
+     * Name
      */
-    title: string;
+    name: string;
     /**
      * Description
      */
     description?: string | null;
+    /**
+     * Venue Id
+     */
+    venue_id: string;
+    /**
+     * Performer Id
+     */
+    performer_id: string;
+    /**
+     * Time
+     */
+    time: string;
+    /**
+     * Price
+     */
+    price: number;
 };
 
 /**
- * ItemPublic
+ * EventDetail
  */
-export type ItemPublic = {
+export type EventDetail = {
     /**
-     * Title
+     * Name
      */
-    title: string;
+    name: string;
     /**
      * Description
      */
@@ -88,6 +94,72 @@ export type ItemPublic = {
      * Owner Id
      */
     owner_id: string;
+    /**
+     * Venue Id
+     */
+    venue_id: string;
+    /**
+     * Performer Id
+     */
+    performer_id: string;
+    /**
+     * Time
+     */
+    time: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Creator
+     */
+    creator: string;
+    /**
+     * Is Read
+     */
+    is_read?: boolean;
+    /**
+     * Is Bookmarked
+     */
+    is_bookmarked?: boolean;
+    /**
+     * Tickets
+     */
+    tickets: Array<TicketPublic>;
+};
+
+/**
+ * EventPublic
+ */
+export type EventPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Venue Id
+     */
+    venue_id: string;
+    /**
+     * Performer Id
+     */
+    performer_id: string;
+    /**
+     * Time
+     */
+    time: string;
     /**
      * Created At
      */
@@ -107,31 +179,49 @@ export type ItemPublic = {
 };
 
 /**
- * ItemUpdate
+ * EventUpdate
  */
-export type ItemUpdate = {
+export type EventUpdate = {
     /**
-     * Title
+     * Name
      */
-    title?: string | null;
+    name?: string | null;
     /**
      * Description
      */
     description?: string | null;
+    /**
+     * Time
+     */
+    time?: string | null;
+    /**
+     * Performer Id
+     */
+    performer_id?: string | null;
 };
 
 /**
- * ItemsPublic
+ * EventsPublic
  */
-export type ItemsPublic = {
+export type EventsPublic = {
     /**
      * Data
      */
-    data: Array<ItemPublic>;
+    data: Array<EventPublic>;
     /**
      * Count
      */
     count: number;
+};
+
+/**
+ * HTTPValidationError
+ */
+export type HTTPValidationError = {
+    /**
+     * Detail
+     */
+    detail?: Array<ValidationError>;
 };
 
 /**
@@ -178,6 +268,38 @@ export type PrivateUserCreate = {
      * Is Verified
      */
     is_verified?: boolean;
+};
+
+/**
+ * TicketAvailability
+ */
+export type TicketAvailability = 'AVAILABLE' | 'BOOKED';
+
+/**
+ * TicketPublic
+ */
+export type TicketPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Row
+     */
+    row: number;
+    /**
+     * Seat
+     */
+    seat: number;
+    /**
+     * Price
+     */
+    price: number;
+    availability: TicketAvailability;
+    /**
+     * User Id
+     */
+    user_id?: string | null;
 };
 
 /**
@@ -794,7 +916,7 @@ export type utilsHealthCheckResponses = {
 
 export type utilsHealthCheckResponse = utilsHealthCheckResponses[keyof utilsHealthCheckResponses];
 
-export type itemsReadItemsData = {
+export type eventsReadEventsData = {
     body?: never;
     path?: never;
     query?: {
@@ -807,53 +929,53 @@ export type itemsReadItemsData = {
          */
         limit?: number;
     };
-    url: '/api/v1/items/';
+    url: '/api/v1/events/';
 };
 
-export type itemsReadItemsErrors = {
+export type eventsReadEventsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemsError = itemsReadItemsErrors[keyof itemsReadItemsErrors];
+export type eventsReadEventsError = eventsReadEventsErrors[keyof eventsReadEventsErrors];
 
-export type itemsReadItemsResponses = {
+export type eventsReadEventsResponses = {
     /**
      * Successful Response
      */
-    200: ItemsPublic;
+    200: EventsPublic;
 };
 
-export type itemsReadItemsResponse = itemsReadItemsResponses[keyof itemsReadItemsResponses];
+export type eventsReadEventsResponse = eventsReadEventsResponses[keyof eventsReadEventsResponses];
 
-export type itemsCreateItemData = {
-    body: ItemCreate;
+export type eventsCreateEventData = {
+    body: EventCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/items/';
+    url: '/api/v1/events/';
 };
 
-export type itemsCreateItemErrors = {
+export type eventsCreateEventErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsCreateItemError = itemsCreateItemErrors[keyof itemsCreateItemErrors];
+export type eventsCreateEventError = eventsCreateEventErrors[keyof eventsCreateEventErrors];
 
-export type itemsCreateItemResponses = {
+export type eventsCreateEventResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: EventPublic;
 };
 
-export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
+export type eventsCreateEventResponse = eventsCreateEventResponses[keyof eventsCreateEventResponses];
 
-export type itemsReadBookmarkedItemsData = {
+export type eventsReadBookmarkedEventsData = {
     body?: never;
     path?: never;
     query?: {
@@ -866,28 +988,28 @@ export type itemsReadBookmarkedItemsData = {
          */
         limit?: number;
     };
-    url: '/api/v1/items/bookmarked';
+    url: '/api/v1/events/bookmarked';
 };
 
-export type itemsReadBookmarkedItemsErrors = {
+export type eventsReadBookmarkedEventsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadBookmarkedItemsError = itemsReadBookmarkedItemsErrors[keyof itemsReadBookmarkedItemsErrors];
+export type eventsReadBookmarkedEventsError = eventsReadBookmarkedEventsErrors[keyof eventsReadBookmarkedEventsErrors];
 
-export type itemsReadBookmarkedItemsResponses = {
+export type eventsReadBookmarkedEventsResponses = {
     /**
      * Successful Response
      */
-    200: ItemsPublic;
+    200: EventsPublic;
 };
 
-export type itemsReadBookmarkedItemsResponse = itemsReadBookmarkedItemsResponses[keyof itemsReadBookmarkedItemsResponses];
+export type eventsReadBookmarkedEventsResponse = eventsReadBookmarkedEventsResponses[keyof eventsReadBookmarkedEventsResponses];
 
-export type itemsDeleteItemData = {
+export type eventsDeleteEventData = {
     body?: never;
     path: {
         /**
@@ -896,28 +1018,28 @@ export type itemsDeleteItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/events/{id}';
 };
 
-export type itemsDeleteItemErrors = {
+export type eventsDeleteEventErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsDeleteItemError = itemsDeleteItemErrors[keyof itemsDeleteItemErrors];
+export type eventsDeleteEventError = eventsDeleteEventErrors[keyof eventsDeleteEventErrors];
 
-export type itemsDeleteItemResponses = {
+export type eventsDeleteEventResponses = {
     /**
      * Successful Response
      */
     200: Message;
 };
 
-export type itemsDeleteItemResponse = itemsDeleteItemResponses[keyof itemsDeleteItemResponses];
+export type eventsDeleteEventResponse = eventsDeleteEventResponses[keyof eventsDeleteEventResponses];
 
-export type itemsReadItemData = {
+export type eventsReadEventData = {
     body?: never;
     path: {
         /**
@@ -926,29 +1048,29 @@ export type itemsReadItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/events/{id}';
 };
 
-export type itemsReadItemErrors = {
+export type eventsReadEventErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsReadItemError = itemsReadItemErrors[keyof itemsReadItemErrors];
+export type eventsReadEventError = eventsReadEventErrors[keyof eventsReadEventErrors];
 
-export type itemsReadItemResponses = {
+export type eventsReadEventResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: EventDetail;
 };
 
-export type itemsReadItemResponse = itemsReadItemResponses[keyof itemsReadItemResponses];
+export type eventsReadEventResponse = eventsReadEventResponses[keyof eventsReadEventResponses];
 
-export type itemsUpdateItemData = {
-    body: ItemUpdate;
+export type eventsUpdateEventData = {
+    body: EventUpdate;
     path: {
         /**
          * Id
@@ -956,29 +1078,29 @@ export type itemsUpdateItemData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}';
+    url: '/api/v1/events/{id}';
 };
 
-export type itemsUpdateItemErrors = {
+export type eventsUpdateEventErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsUpdateItemError = itemsUpdateItemErrors[keyof itemsUpdateItemErrors];
+export type eventsUpdateEventError = eventsUpdateEventErrors[keyof eventsUpdateEventErrors];
 
-export type itemsUpdateItemResponses = {
+export type eventsUpdateEventResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: EventPublic;
 };
 
-export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+export type eventsUpdateEventResponse = eventsUpdateEventResponses[keyof eventsUpdateEventResponses];
 
-export type itemsSetItemBookmarkData = {
-    body: ItemBookmarkUpdate;
+export type eventsSetEventBookmarkData = {
+    body: EventBookmarkUpdate;
     path: {
         /**
          * Id
@@ -986,26 +1108,26 @@ export type itemsSetItemBookmarkData = {
         id: string;
     };
     query?: never;
-    url: '/api/v1/items/{id}/bookmark';
+    url: '/api/v1/events/{id}/bookmark';
 };
 
-export type itemsSetItemBookmarkErrors = {
+export type eventsSetEventBookmarkErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type itemsSetItemBookmarkError = itemsSetItemBookmarkErrors[keyof itemsSetItemBookmarkErrors];
+export type eventsSetEventBookmarkError = eventsSetEventBookmarkErrors[keyof eventsSetEventBookmarkErrors];
 
-export type itemsSetItemBookmarkResponses = {
+export type eventsSetEventBookmarkResponses = {
     /**
      * Successful Response
      */
-    200: ItemPublic;
+    200: EventPublic;
 };
 
-export type itemsSetItemBookmarkResponse = itemsSetItemBookmarkResponses[keyof itemsSetItemBookmarkResponses];
+export type eventsSetEventBookmarkResponse = eventsSetEventBookmarkResponses[keyof eventsSetEventBookmarkResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

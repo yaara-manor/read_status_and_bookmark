@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Bookmark } from "lucide-react"
 
-import { type ItemPublic, type ItemsPublic, ItemsService } from "@/client"
+import { type EventPublic, type EventsPublic, EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 function patchList(
-  old: ItemsPublic | undefined,
-  itemId: string,
+  old: EventsPublic | undefined,
+  eventId: string,
   is_bookmarked: boolean,
 ) {
   if (!old?.data) {
@@ -16,44 +16,44 @@ function patchList(
   return {
     ...old,
     data: old.data.map((row) =>
-      row.id === itemId ? { ...row, is_bookmarked } : row,
+      row.id === eventId ? { ...row, is_bookmarked } : row,
     ),
   }
 }
 
-export function BookmarkToggle({ item }: { item: ItemPublic }) {
+export function BookmarkToggle({ event }: { event: EventPublic }) {
   const queryClient = useQueryClient()
   const mutation = useMutation({
     mutationFn: (is_bookmarked: boolean) =>
-      ItemsService.setItemBookmark({
-        path: { id: item.id },
+      EventsService.setEventBookmark({
+        path: { id: event.id },
         body: { is_bookmarked },
       }),
     onMutate: async (is_bookmarked) => {
-      const previousItems = queryClient.getQueryData<ItemsPublic>(["items"])
-      const previousItem = queryClient.getQueryData<ItemPublic>([
-        "items",
-        item.id,
+      const previousEvents = queryClient.getQueryData<EventsPublic>(["events"])
+      const previousEvent = queryClient.getQueryData<EventPublic>([
+        "events",
+        event.id,
       ])
-      const previousBookmarked = queryClient.getQueryData<ItemsPublic>([
+      const previousBookmarked = queryClient.getQueryData<EventsPublic>([
         "bookmarked",
       ])
-      if (previousItems?.data) {
+      if (previousEvents?.data) {
         queryClient.setQueryData(
-          ["items"],
-          patchList(previousItems, item.id, is_bookmarked),
+          ["events"],
+          patchList(previousEvents, event.id, is_bookmarked),
         )
       }
-      if (previousItem) {
-        queryClient.setQueryData(["items", item.id], {
-          ...previousItem,
+      if (previousEvent) {
+        queryClient.setQueryData(["events", event.id], {
+          ...previousEvent,
           is_bookmarked,
         })
       }
       if (previousBookmarked?.data) {
         if (!is_bookmarked) {
           const data = previousBookmarked.data.filter(
-            (row) => row.id !== item.id,
+            (row) => row.id !== event.id,
           )
           queryClient.setQueryData(["bookmarked"], {
             ...previousBookmarked,
@@ -63,25 +63,25 @@ export function BookmarkToggle({ item }: { item: ItemPublic }) {
         } else {
           queryClient.setQueryData(
             ["bookmarked"],
-            patchList(previousBookmarked, item.id, true),
+            patchList(previousBookmarked, event.id, true),
           )
         }
       }
-      return { previousItems, previousItem, previousBookmarked }
+      return { previousEvents, previousEvent, previousBookmarked }
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previousItems) {
-        queryClient.setQueryData(["items"], ctx.previousItems)
+      if (ctx?.previousEvents) {
+        queryClient.setQueryData(["events"], ctx.previousEvents)
       }
-      if (ctx?.previousItem) {
-        queryClient.setQueryData(["items", item.id], ctx.previousItem)
+      if (ctx?.previousEvent) {
+        queryClient.setQueryData(["events", event.id], ctx.previousEvent)
       }
       if (ctx?.previousBookmarked) {
         queryClient.setQueryData(["bookmarked"], ctx.previousBookmarked)
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["events"] })
       queryClient.invalidateQueries({ queryKey: ["bookmarked"] })
     },
   })
@@ -93,15 +93,15 @@ export function BookmarkToggle({ item }: { item: ItemPublic }) {
       variant="ghost"
       size="icon"
       className="relative z-10"
-      aria-label={item.is_bookmarked ? "Remove bookmark" : "Bookmark"}
-      aria-pressed={Boolean(item.is_bookmarked)}
+      aria-label={event.is_bookmarked ? "Remove bookmark" : "Bookmark"}
+      aria-pressed={Boolean(event.is_bookmarked)}
       onClick={(e) => {
         e.stopPropagation()
-        mutation.mutate(!item.is_bookmarked)
+        mutation.mutate(!event.is_bookmarked)
       }}
     >
       <Bookmark
-        className={cn("size-4", item.is_bookmarked && "fill-current")}
+        className={cn("size-4", event.is_bookmarked && "fill-current")}
       />
     </Button>
   )

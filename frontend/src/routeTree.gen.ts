@@ -17,9 +17,9 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutBookmarkedRouteImport } from './routes/_layout/bookmarked'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutEventsRouteImport } from './routes/_layout/events'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutItemsItemIdRouteImport } from './routes/_layout/items_.$itemId'
+import { Route as LayoutEventsEventIdRouteImport } from './routes/_layout/events_.$eventId'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -60,9 +60,9 @@ const LayoutBookmarkedRoute = LayoutBookmarkedRouteImport.update({
   path: '/bookmarked',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
+const LayoutEventsRoute = LayoutEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
@@ -70,9 +70,9 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsItemIdRoute = LayoutItemsItemIdRouteImport.update({
-  id: '/items_/$itemId',
-  path: '/items/$itemId',
+const LayoutEventsEventIdRoute = LayoutEventsEventIdRouteImport.update({
+  id: '/events_/$eventId',
+  path: '/events/$eventId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -84,9 +84,9 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/bookmarked': typeof LayoutBookmarkedRoute
-  '/items': typeof LayoutItemsRoute
+  '/events': typeof LayoutEventsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/items/$itemId': typeof LayoutItemsItemIdRoute
+  '/events/$eventId': typeof LayoutEventsEventIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -95,10 +95,10 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/bookmarked': typeof LayoutBookmarkedRoute
-  '/items': typeof LayoutItemsRoute
+  '/events': typeof LayoutEventsRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
-  '/items/$itemId': typeof LayoutItemsItemIdRoute
+  '/events/$eventId': typeof LayoutEventsEventIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,10 +109,10 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/bookmarked': typeof LayoutBookmarkedRoute
-  '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/events': typeof LayoutEventsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
-  '/_layout/items_/$itemId': typeof LayoutItemsItemIdRoute
+  '/_layout/events_/$eventId': typeof LayoutEventsEventIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -124,9 +124,9 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/bookmarked'
-    | '/items'
+    | '/events'
     | '/settings'
-    | '/items/$itemId'
+    | '/events/$eventId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -135,10 +135,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/bookmarked'
-    | '/items'
+    | '/events'
     | '/settings'
     | '/'
-    | '/items/$itemId'
+    | '/events/$eventId'
   id:
     | '__root__'
     | '/_layout'
@@ -148,10 +148,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/bookmarked'
-    | '/_layout/items'
+    | '/_layout/events'
     | '/_layout/settings'
     | '/_layout/'
-    | '/_layout/items_/$itemId'
+    | '/_layout/events_/$eventId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,11 +220,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutBookmarkedRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
+    '/_layout/events': {
+      id: '/_layout/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof LayoutEventsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -234,11 +234,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items_/$itemId': {
-      id: '/_layout/items_/$itemId'
-      path: '/items/$itemId'
-      fullPath: '/items/$itemId'
-      preLoaderRoute: typeof LayoutItemsItemIdRouteImport
+    '/_layout/events_/$eventId': {
+      id: '/_layout/events_/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof LayoutEventsEventIdRouteImport
       parentRoute: typeof LayoutRoute
     }
   }
@@ -247,19 +247,19 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutBookmarkedRoute: typeof LayoutBookmarkedRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutEventsRoute: typeof LayoutEventsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
-  LayoutItemsItemIdRoute: typeof LayoutItemsItemIdRoute
+  LayoutEventsEventIdRoute: typeof LayoutEventsEventIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutBookmarkedRoute: LayoutBookmarkedRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
+  LayoutEventsRoute: LayoutEventsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
-  LayoutItemsItemIdRoute: LayoutItemsItemIdRoute,
+  LayoutEventsEventIdRoute: LayoutEventsEventIdRoute,
 }
 
 const LayoutRouteWithChildren =

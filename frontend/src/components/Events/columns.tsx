@@ -1,12 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { Check, Copy } from "lucide-react"
 
-import type { ItemPublic } from "@/client"
+import type { EventPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
 import { cn } from "@/lib/utils"
 import { BookmarkToggle } from "./BookmarkToggle"
-import { ItemActionsMenu } from "./ItemActionsMenu"
+import { EventActionsMenu } from "./EventActionsMenu"
 
 function CopyId({ id }: { id: string }) {
   const [copiedText, copy] = useCopyToClipboard()
@@ -35,18 +35,16 @@ function CopyId({ id }: { id: string }) {
   )
 }
 
-export const columns: ColumnDef<ItemPublic>[] = [
+export const columns: ColumnDef<EventPublic>[] = [
   {
     accessorKey: "id",
     header: "ID",
     cell: ({ row }) => <CopyId id={row.original.id} />,
   },
   {
-    accessorKey: "title",
-    header: "Title",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.title}</span>
-    ),
+    accessorKey: "name",
+    header: "Name",
+    cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
   },
   {
     accessorKey: "description",
@@ -86,12 +84,8 @@ export const columns: ColumnDef<ItemPublic>[] = [
     id: "bookmark",
     header: "Bookmark",
     cell: ({ row }) => (
-      <div
-        className="flex justify-start"
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <BookmarkToggle item={row.original} />
+      <div className="flex justify-start">
+        <BookmarkToggle event={row.original} />
       </div>
     ),
   },
@@ -99,8 +93,13 @@ export const columns: ColumnDef<ItemPublic>[] = [
     id: "actions",
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
-      <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-        <ItemActionsMenu item={row.original} />
+      // biome-ignore lint/a11y/noStaticElementInteractions: stop the row click
+      <div
+        className="flex justify-end"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <EventActionsMenu event={row.original} />
       </div>
     ),
   },

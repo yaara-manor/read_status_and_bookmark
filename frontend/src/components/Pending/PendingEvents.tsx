@@ -8,12 +8,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const PendingItems = () => (
+const PendingEvents = () => (
   <Table>
     <TableHeader>
       <TableRow>
         <TableHead>ID</TableHead>
-        <TableHead>Title</TableHead>
+        <TableHead>Name</TableHead>
         <TableHead>Description</TableHead>
         <TableHead>
           <span className="sr-only">Actions</span>
@@ -43,4 +43,4 @@ const PendingItems = () => (
   </Table>
 )
 
-export default PendingItems
+export default PendingEvents

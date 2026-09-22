@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadBookmarkedItemsData, itemsReadBookmarkedItemsErrors, itemsReadBookmarkedItemsResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsSetItemBookmarkData, itemsSetItemBookmarkErrors, itemsSetItemBookmarkResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadBookmarkedEventsData, eventsReadBookmarkedEventsErrors, eventsReadBookmarkedEventsResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsSetEventBookmarkData, eventsSetEventBookmarkErrors, eventsSetEventBookmarkResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -284,31 +284,31 @@ export class UtilsService {
     }
 }
 
-export class ItemsService {
+export class EventsService {
     /**
-     * Read Items
+     * Read Events
      *
-     * Retrieve items.
+     * Retrieve events.
      */
-    public static readItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadItemsData, ThrowOnError>) {
-        return (options?.client ?? client).get<itemsReadItemsResponses, itemsReadItemsErrors, ThrowOnError>({
+    public static readEvents<ThrowOnError extends boolean = true>(options?: Options<eventsReadEventsData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsReadEventsResponses, eventsReadEventsErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/events/',
             ...options
         });
     }
     
     /**
-     * Create Item
+     * Create Event
      *
-     * Create new item.
+     * Create new event.
      */
-    public static createItem<ThrowOnError extends boolean = true>(options: Options<itemsCreateItemData, ThrowOnError>) {
-        return (options.client ?? client).post<itemsCreateItemResponses, itemsCreateItemErrors, ThrowOnError>({
+    public static createEvent<ThrowOnError extends boolean = true>(options: Options<eventsCreateEventData, ThrowOnError>) {
+        return (options.client ?? client).post<eventsCreateEventResponses, eventsCreateEventErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/',
+            url: '/api/v1/events/',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -318,57 +318,57 @@ export class ItemsService {
     }
     
     /**
-     * Read Bookmarked Items
+     * Read Bookmarked Events
      *
-     * Retrieve the current user's bookmarked items.
+     * Retrieve the current user's bookmarked events.
      */
-    public static readBookmarkedItems<ThrowOnError extends boolean = true>(options?: Options<itemsReadBookmarkedItemsData, ThrowOnError>) {
-        return (options?.client ?? client).get<itemsReadBookmarkedItemsResponses, itemsReadBookmarkedItemsErrors, ThrowOnError>({
+    public static readBookmarkedEvents<ThrowOnError extends boolean = true>(options?: Options<eventsReadBookmarkedEventsData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsReadBookmarkedEventsResponses, eventsReadBookmarkedEventsErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/bookmarked',
+            url: '/api/v1/events/bookmarked',
             ...options
         });
     }
     
     /**
-     * Delete Item
+     * Delete Event
      *
-     * Delete an item.
+     * Delete an event.
      */
-    public static deleteItem<ThrowOnError extends boolean = true>(options: Options<itemsDeleteItemData, ThrowOnError>) {
-        return (options.client ?? client).delete<itemsDeleteItemResponses, itemsDeleteItemErrors, ThrowOnError>({
+    public static deleteEvent<ThrowOnError extends boolean = true>(options: Options<eventsDeleteEventData, ThrowOnError>) {
+        return (options.client ?? client).delete<eventsDeleteEventResponses, eventsDeleteEventErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/events/{id}',
             ...options
         });
     }
     
     /**
-     * Read Item
+     * Read Event
      *
-     * Get item by ID.
+     * Get event by ID.
      */
-    public static readItem<ThrowOnError extends boolean = true>(options: Options<itemsReadItemData, ThrowOnError>) {
-        return (options.client ?? client).get<itemsReadItemResponses, itemsReadItemErrors, ThrowOnError>({
+    public static readEvent<ThrowOnError extends boolean = true>(options: Options<eventsReadEventData, ThrowOnError>) {
+        return (options.client ?? client).get<eventsReadEventResponses, eventsReadEventErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/events/{id}',
             ...options
         });
     }
     
     /**
-     * Update Item
+     * Update Event
      *
-     * Update an item.
+     * Update an event.
      */
-    public static updateItem<ThrowOnError extends boolean = true>(options: Options<itemsUpdateItemData, ThrowOnError>) {
-        return (options.client ?? client).put<itemsUpdateItemResponses, itemsUpdateItemErrors, ThrowOnError>({
+    public static updateEvent<ThrowOnError extends boolean = true>(options: Options<eventsUpdateEventData, ThrowOnError>) {
+        return (options.client ?? client).put<eventsUpdateEventResponses, eventsUpdateEventErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/events/{id}',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -378,15 +378,15 @@ export class ItemsService {
     }
     
     /**
-     * Set Item Bookmark
+     * Set Event Bookmark
      *
-     * Set or unset the current user's bookmark for an item.
+     * Set or unset the current user's bookmark for an event.
      */
-    public static setItemBookmark<ThrowOnError extends boolean = true>(options: Options<itemsSetItemBookmarkData, ThrowOnError>) {
-        return (options.client ?? client).put<itemsSetItemBookmarkResponses, itemsSetItemBookmarkErrors, ThrowOnError>({
+    public static setEventBookmark<ThrowOnError extends boolean = true>(options: Options<eventsSetEventBookmarkData, ThrowOnError>) {
+        return (options.client ?? client).put<eventsSetEventBookmarkResponses, eventsSetEventBookmarkErrors, ThrowOnError>({
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/items/{id}/bookmark',
+            url: '/api/v1/events/{id}/bookmark',
             ...options,
             headers: {
                 'Content-Type': 'application/json',

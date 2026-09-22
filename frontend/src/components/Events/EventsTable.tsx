@@ -3,28 +3,28 @@ import { useNavigate } from "@tanstack/react-router"
 import { Search } from "lucide-react"
 import { Suspense } from "react"
 
-import type { ItemsPublic } from "@/client"
+import type { EventsPublic } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
-import PendingItems from "@/components/Pending/PendingItems"
+import PendingEvents from "@/components/Pending/PendingEvents"
 import { columns } from "./columns"
 
-type ItemsTableProps = {
+type EventsTableProps = {
   queryKey: readonly unknown[]
-  queryFn: () => Promise<ItemsPublic>
+  queryFn: () => Promise<EventsPublic>
   emptyTitle: string
   emptyDescription: string
 }
 
-function ItemsTableContent({
+function EventsTableContent({
   queryKey,
   queryFn,
   emptyTitle,
   emptyDescription,
-}: ItemsTableProps) {
-  const { data: items } = useSuspenseQuery({ queryKey, queryFn })
+}: EventsTableProps) {
+  const { data: events } = useSuspenseQuery({ queryKey, queryFn })
   const navigate = useNavigate()
 
-  if (items.data.length === 0) {
+  if (events.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
         <div className="rounded-full bg-muted p-4 mb-4">
@@ -39,18 +39,18 @@ function ItemsTableContent({
   return (
     <DataTable
       columns={columns}
-      data={items.data}
-      onRowClick={(item) =>
-        navigate({ to: "/items/$itemId", params: { itemId: item.id } })
+      data={events.data}
+      onRowClick={(event) =>
+        navigate({ to: "/events/$eventId", params: { eventId: event.id } })
       }
     />
   )
 }
 
-export function ItemsTable(props: ItemsTableProps) {
+export function EventsTable(props: EventsTableProps) {
   return (
-    <Suspense fallback={<PendingItems />}>
-      <ItemsTableContent {...props} />
+    <Suspense fallback={<PendingEvents />}>
+      <EventsTableContent {...props} />
     </Suspense>
   )
 }
