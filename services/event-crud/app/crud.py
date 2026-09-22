@@ -8,17 +8,6 @@ from sqlmodel import Session, select
 from app.models import Event, Performer, Ticket, Venue
 
 
-def name_prefix(q: str) -> str | None:
-    stripped = q.strip().lower()
-    if not stripped:
-        return None
-    return stripped.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
-def suggest_limit(limit: int) -> int:
-    return min(max(limit, 1), 10)
-
-
 @overload
 def match_name_prefix(
     session: Session, model: type[Venue], q: str, limit: int
@@ -37,19 +26,21 @@ def match_name_prefix(
     q: str,
     limit: int,
 ) -> list[Venue] | list[Performer]:
-    prefix = name_prefix(q)
-    if prefix is None:
+    prefix = q.strip().lower()
+    if not prefix:
         return []
+    prefix = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     # ponytail: left-anchored lower(name) LIKE uses ix_*_lower_name up to millions of rows.
     # Upgrade: pg_trgm or a search service for contains or typo matching.
     column = func.lower(model.name)
-    rows = session.exec(
-        select(model)
-        .where(column.like(f"{prefix}%", escape="\\"))
-        .order_by(column, model.id)
-        .limit(suggest_limit(limit))
-    ).all()
-    return list(rows)
+    return list(
+        session.exec(
+            select(model)
+            .where(column.like(f"{prefix}%", escape="\\"))
+            .order_by(column, model.id)
+            .limit(min(max(limit, 1), 10))
+        ).all()
+    )
 
 
 def create_event(

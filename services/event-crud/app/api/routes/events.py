@@ -174,17 +174,15 @@ def set_event_bookmark(
 
 
 def suggest_venues(
-    session: SessionDep, caller: CallerDep, q: str = "", limit: int = 10
+    session: SessionDep, _caller: CallerDep, q: str = "", limit: int = 10
 ) -> VenuesMatch:
-    del caller
     rows = crud.match_name_prefix(session, Venue, q, limit)
     return VenuesMatch(data=[VenueMatch(id=row.id, name=row.name) for row in rows])
 
 
 def suggest_performers(
-    session: SessionDep, caller: CallerDep, q: str = "", limit: int = 10
+    session: SessionDep, _caller: CallerDep, q: str = "", limit: int = 10
 ) -> PerformersMatch:
-    del caller
     rows = crud.match_name_prefix(session, Performer, q, limit)
     return PerformersMatch(
         data=[

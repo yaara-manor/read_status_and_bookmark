@@ -16,13 +16,8 @@ type NamePickerProps = {
   queryKey: string
   search: (query: string) => Promise<NameMatch[]>
   id: string
-  selectedName: string
-  onPick: (id: string, name: string) => void
+  onPick: (id: string) => void
   error?: string
-}
-
-function optionName(match: NameMatch) {
-  return match.hint ? `${match.name} ${match.hint}` : match.name
 }
 
 const NamePicker = ({
@@ -31,14 +26,13 @@ const NamePicker = ({
   queryKey,
   search,
   id,
-  selectedName,
   onPick,
   error,
 }: NamePickerProps) => {
   const inputId = useId()
   const listId = useId()
-  const [text, setText] = useState(selectedName)
-  const [debounced, setDebounced] = useState(selectedName)
+  const [text, setText] = useState("")
+  const [debounced, setDebounced] = useState("")
   const [open, setOpen] = useState(false)
   const query = debounced.trim()
 
@@ -72,7 +66,7 @@ const NamePicker = ({
           setText(event.target.value)
           setOpen(true)
           if (id) {
-            onPick("", "")
+            onPick("")
           }
         }}
       />
@@ -97,10 +91,10 @@ const NamePicker = ({
               onClick={() => {
                 setText(match.name)
                 setOpen(false)
-                onPick(match.id, match.name)
+                onPick(match.id)
               }}
             >
-              {optionName(match)}
+              {match.hint ? `${match.name} ${match.hint}` : match.name}
             </button>
           ))}
         </div>

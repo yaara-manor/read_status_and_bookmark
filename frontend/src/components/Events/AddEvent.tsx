@@ -51,10 +51,42 @@ function apiTime(value: string) {
   return value.length === 16 ? `${value}:00Z` : value
 }
 
+const nameFields = [
+  {
+    name: "venue_id",
+    label: "Venue",
+    placeholder: "Main Hall",
+    queryKey: "venues",
+    search: async (query: string) => {
+      const result = await EventsService.suggestVenues({
+        query: { q: query, limit: 10 },
+      })
+      return (result.data?.data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+      }))
+    },
+  },
+  {
+    name: "performer_id",
+    label: "Performer",
+    placeholder: "The Band",
+    queryKey: "performers",
+    search: async (query: string) => {
+      const result = await EventsService.suggestPerformers({
+        query: { q: query, limit: 10 },
+      })
+      return (result.data?.data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        hint: row.genre,
+      }))
+    },
+  },
+] as const
+
 const AddEvent = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [venueName, setVenueName] = useState("")
-  const [performerName, setPerformerName] = useState("")
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -78,8 +110,6 @@ const AddEvent = () => {
     onSuccess: () => {
       showSuccessToast("Event created successfully")
       form.reset()
-      setVenueName("")
-      setPerformerName("")
       setIsOpen(false)
     },
     onError: handleError.bind(showErrorToast),
@@ -150,65 +180,26 @@ const AddEvent = () => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="venue_id"
-                render={({ field, fieldState }) => (
-                  <FormItem>
-                    <NamePicker
-                      label="Venue"
-                      placeholder="Main Hall"
-                      queryKey="venues"
-                      id={field.value}
-                      selectedName={venueName}
-                      error={fieldState.error?.message}
-                      onPick={(id, name) => {
-                        field.onChange(id)
-                        setVenueName(name)
-                      }}
-                      search={async (query) => {
-                        const result = await EventsService.suggestVenues({
-                          query: { q: query, limit: 10 },
-                        })
-                        return (result.data?.data ?? []).map((row) => ({
-                          id: row.id,
-                          name: row.name,
-                        }))
-                      }}
-                    />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="performer_id"
-                render={({ field, fieldState }) => (
-                  <FormItem>
-                    <NamePicker
-                      label="Performer"
-                      placeholder="The Band"
-                      queryKey="performers"
-                      id={field.value}
-                      selectedName={performerName}
-                      error={fieldState.error?.message}
-                      onPick={(id, name) => {
-                        field.onChange(id)
-                        setPerformerName(name)
-                      }}
-                      search={async (query) => {
-                        const result = await EventsService.suggestPerformers({
-                          query: { q: query, limit: 10 },
-                        })
-                        return (result.data?.data ?? []).map((row) => ({
-                          id: row.id,
-                          name: row.name,
-                          hint: row.genre,
-                        }))
-                      }}
-                    />
-                  </FormItem>
-                )}
-              />
+              {nameFields.map((picker) => (
+                <FormField
+                  key={picker.name}
+                  control={form.control}
+                  name={picker.name}
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <NamePicker
+                        label={picker.label}
+                        placeholder={picker.placeholder}
+                        queryKey={picker.queryKey}
+                        id={field.value}
+                        error={fieldState.error?.message}
+                        onPick={field.onChange}
+                        search={picker.search}
+                      />
+                    </FormItem>
+                  )}
+                />
+              ))}
               <FormField
                 control={form.control}
                 name="time"
