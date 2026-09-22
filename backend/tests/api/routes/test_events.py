@@ -218,6 +218,29 @@ def test_read_events(
         assert "tickets" not in row
 
 
+def test_seed_opening_night(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    response = client.get(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    row = next(r for r in response.json()["data"] if r["name"] == "Opening Night")
+    assert "tickets" not in row
+    detail = client.get(
+        f"{settings.API_V1_STR}/events/{row['id']}",
+        headers=superuser_token_headers,
+    )
+    assert detail.status_code == 200
+    tickets = detail.json()["tickets"]
+    assert len(tickets) == 21
+    seat = next(t for t in tickets if t["row"] == 0 and t["seat"] == 2)
+    assert seat["price"] == 25.0
+    assert seat["availability"] == TicketAvailability.AVAILABLE.value
+    assert seat["user_id"] is None
+
+
 def test_read_events_includes_other_users_event(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:
