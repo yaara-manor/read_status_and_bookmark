@@ -1,6 +1,7 @@
-from typing import Literal
+import warnings
+from typing import Literal, Self
 
-from pydantic import HttpUrl
+from pydantic import HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +19,22 @@ class Settings(BaseSettings):
     INTERNAL_API_KEY: str
     SENTRY_DSN: HttpUrl | None = None
     FASTAPI_ENV: Literal["development"] | None = None
+
+    def _check_default_secret(self, var_name: str, value: str | None) -> None:
+        if value == "changethis":
+            message = (
+                f'The value of {var_name} is "changethis", '
+                "for security, please change it, at least for deployments."
+            )
+            if self.FASTAPI_ENV == "development":
+                warnings.warn(message, stacklevel=1)
+            else:
+                raise ValueError(message)
+
+    @model_validator(mode="after")
+    def _enforce_non_default_secrets(self) -> Self:
+        self._check_default_secret("INTERNAL_API_KEY", self.INTERNAL_API_KEY)
+        return self
 
 
 settings = Settings()  # type: ignore[call-arg]

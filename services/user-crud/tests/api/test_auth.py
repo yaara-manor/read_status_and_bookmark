@@ -120,12 +120,29 @@ def test_duplicate_register_is_400_and_adds_no_outbox_row(client: TestClient) ->
 
 
 def test_password_recovery_unknown_email_returns_same_message(
-    client: TestClient,
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    sent: list[object] = []
+    monkeypatch.setattr(
+        "app.api.routes.auth.send_email", lambda **_kwargs: sent.append(_kwargs)
+    )
     response = client.post(
         "/auth/password-recovery",
         json={"email": _email()},
     )
+    assert response.status_code == 200
+    assert response.json()["message"] == _RECOVERY_MESSAGE
+    assert sent == []
+
+
+def test_password_recovery_known_email_mail_disabled_returns_same_message(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "SMTP_HOST", None)
+    monkeypatch.setattr(settings, "EMAILS_FROM_EMAIL", None)
+    email = _email()
+    _insert_user(email=email)
+    response = client.post("/auth/password-recovery", json={"email": email})
     assert response.status_code == 200
     assert response.json()["message"] == _RECOVERY_MESSAGE
 

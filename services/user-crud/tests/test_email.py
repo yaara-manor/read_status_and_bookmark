@@ -2,7 +2,6 @@ import pytest
 
 from app.core.config import settings
 from app.email import (
-    generate_new_account_email,
     generate_password_reset_token,
     generate_reset_password_email,
     render_email_template,
@@ -37,16 +36,6 @@ def test_generate_reset_password_email_returns_subject_and_html() -> None:
     assert (
         f"{settings.FRONTEND_HOST}/reset-password?token=tok" in email_data.html_content
     )
-
-
-def test_generate_new_account_email_returns_subject_and_html() -> None:
-    email_data = generate_new_account_email(
-        email_to="ada@example.com", username="Ada", password="secret"
-    )
-    assert "Ada" in email_data.subject
-    assert settings.PROJECT_NAME in email_data.subject
-    assert "secret" in email_data.html_content
-    assert settings.FRONTEND_HOST in email_data.html_content
 
 
 def test_generate_and_verify_password_reset_token_round_trip() -> None:

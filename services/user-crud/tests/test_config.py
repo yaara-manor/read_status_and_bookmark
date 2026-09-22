@@ -33,3 +33,13 @@ def test_emails_enabled_follows_host_and_from_address() -> None:
 def test_default_secret_raises_outside_development() -> None:
     with pytest.raises(ValueError, match="SECRET_KEY"):
         _settings(SECRET_KEY="changethis")
+
+
+def test_internal_api_key_changethis_raises_outside_development() -> None:
+    with pytest.raises(ValueError, match="INTERNAL_API_KEY"):
+        _settings(INTERNAL_API_KEY="changethis")
+
+
+def test_internal_api_key_changethis_warns_in_development() -> None:
+    with pytest.warns(UserWarning, match="INTERNAL_API_KEY"):
+        _settings(INTERNAL_API_KEY="changethis", FASTAPI_ENV="development")

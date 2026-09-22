@@ -86,6 +86,7 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
         )
+        self._check_default_secret("INTERNAL_API_KEY", self.INTERNAL_API_KEY)
 
         return self
 

@@ -1,6 +1,6 @@
-import asyncio
+import threading
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -15,11 +15,8 @@ from app.publisher import run_publisher
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    task = asyncio.create_task(run_publisher())
+    threading.Thread(target=run_publisher, name="user-events", daemon=True).start()
     yield
-    task.cancel()
-    with suppress(asyncio.CancelledError):
-        await task
 
 
 app = FastAPI(lifespan=_lifespan)

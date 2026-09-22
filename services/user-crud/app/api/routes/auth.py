@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from contracts import (
@@ -26,6 +27,8 @@ from app.email import (
     verify_password_reset_token,
 )
 from app.outbox import display_name, write_outbox
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", dependencies=[Depends(require_internal_key)])
 
@@ -84,11 +87,14 @@ def recover_password(session: SessionDep, body: _RecoveryEmail) -> Message:
         email_data = generate_reset_password_email(
             email_to=user.email, email=body.email, token=password_reset_token
         )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
+        try:
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content,
+            )
+        except Exception:
+            logger.exception("password recovery email failed")
     return Message(
         message="If that email is registered, we sent a password recovery link"
     )

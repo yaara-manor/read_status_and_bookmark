@@ -26,6 +26,7 @@ os.environ["EVENT_CRUD_URL"] = "http://event.test"
 os.environ["INTERNAL_API_KEY"] = "test-internal-key"
 os.environ["FASTAPI_ENV"] = "development"
 
+from app.core.config import Settings
 from app.main import app
 
 CALLER = Caller(
@@ -202,6 +203,16 @@ def test_event_service_404_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None
     assert response.json()["detail"] == "Event not found"
 
 
+def test_health_timeout_is_service_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("timed out")
+
+    response = _client(monkeypatch, handler).get("/api/v1/health")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Service unavailable"
+
+
 def test_health_is_true_when_both_services_are_up(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -226,6 +237,28 @@ def test_health_is_unavailable_when_event_health_fails(
     response = _client(monkeypatch, handler).get("/api/v1/health")
 
     assert response.status_code == 503
+
+
+def test_internal_api_key_changethis_raises_outside_development() -> None:
+    with pytest.raises(ValueError, match="INTERNAL_API_KEY"):
+        Settings(
+            PROJECT_NAME="Ticketmaster",
+            USER_CRUD_URL="http://user.test",
+            EVENT_CRUD_URL="http://event.test",
+            INTERNAL_API_KEY="changethis",
+            FASTAPI_ENV=None,
+        )
+
+
+def test_internal_api_key_changethis_warns_in_development() -> None:
+    with pytest.warns(UserWarning, match="INTERNAL_API_KEY"):
+        Settings(
+            PROJECT_NAME="Ticketmaster",
+            USER_CRUD_URL="http://user.test",
+            EVENT_CRUD_URL="http://event.test",
+            INTERNAL_API_KEY="changethis",
+            FASTAPI_ENV="development",
+        )
 
 
 def test_login_forwards_without_caller(monkeypatch: pytest.MonkeyPatch) -> None:
