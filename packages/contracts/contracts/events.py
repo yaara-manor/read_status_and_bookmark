@@ -68,3 +68,22 @@ class EventBookmarkUpdate(BaseModel):
 class EventsPublic(BaseModel):
     data: list[EventPublic]
     count: int
+
+
+class VenueMatch(BaseModel):
+    id: UUID
+    name: str
+
+
+class VenuesMatch(BaseModel):
+    data: list[VenueMatch]
+
+
+class PerformerMatch(BaseModel):
+    id: UUID
+    name: str
+    genre: PerformerGenre
+
+
+class PerformersMatch(BaseModel):
+    data: list[PerformerMatch]

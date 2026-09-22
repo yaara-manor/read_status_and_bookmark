@@ -1,9 +1,46 @@
 import uuid
+from typing import overload
 
 from contracts import EventCreate, TicketAvailability
-from sqlmodel import Session
+from sqlalchemy import func
+from sqlmodel import Session, select
 
 from app.models import Event, Performer, Ticket, Venue
+
+
+@overload
+def match_name_prefix(
+    session: Session, model: type[Venue], q: str, limit: int
+) -> list[Venue]: ...
+
+
+@overload
+def match_name_prefix(
+    session: Session, model: type[Performer], q: str, limit: int
+) -> list[Performer]: ...
+
+
+def match_name_prefix(
+    session: Session,
+    model: type[Venue] | type[Performer],
+    q: str,
+    limit: int,
+) -> list[Venue] | list[Performer]:
+    prefix = q.strip().lower()
+    if not prefix:
+        return []
+    prefix = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    # ponytail: left-anchored lower(name) LIKE uses ix_*_lower_name up to millions of rows.
+    # Upgrade: pg_trgm or a search service for contains or typo matching.
+    column = func.lower(model.name)
+    return list(
+        session.exec(
+            select(model)
+            .where(column.like(f"{prefix}%", escape="\\"))
+            .order_by(column, model.id)
+            .limit(min(max(limit, 1), 10))
+        ).all()
+    )
 
 
 def create_event(

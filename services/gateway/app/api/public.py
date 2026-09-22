@@ -24,6 +24,17 @@ def _service_url(route: PublicRoute) -> str:
             assert_never(unreachable)
 
 
+def _param(
+    name: str, annotation: object, default: object = inspect.Parameter.empty
+) -> inspect.Parameter:
+    return inspect.Parameter(
+        name,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        default=default,
+        annotation=annotation,
+    )
+
+
 def _proxy_endpoint(route: PublicRoute):
     async def endpoint(request: Request, **kwargs: object) -> Response:
         caller = kwargs.get("caller")
@@ -33,54 +44,19 @@ def _proxy_endpoint(route: PublicRoute):
             caller if isinstance(caller, Caller) else None,
         )
 
-    parameters = [
-        inspect.Parameter(
-            "request",
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=Request,
-        )
-    ]
+    parameters = [_param("request", Request)]
     for name in _PATH_PARAM.findall(route.path):
-        parameters.append(
-            inspect.Parameter(
-                name,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=UUID,
-            )
-        )
+        parameters.append(_param(name, UUID))
     if route.body is not None:
-        parameters.append(
-            inspect.Parameter(
-                "body",
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=route.body,
-            )
-        )
+        parameters.append(_param("body", route.body))
     if route.caller:
-        parameters.append(
-            inspect.Parameter(
-                "caller",
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=CallerDep,
-            )
-        )
+        parameters.append(_param("caller", CallerDep))
     if route.paged:
-        parameters.append(
-            inspect.Parameter(
-                "skip",
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                default=0,
-                annotation=int,
-            )
-        )
-        parameters.append(
-            inspect.Parameter(
-                "limit",
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                default=100,
-                annotation=int,
-            )
-        )
+        parameters.append(_param("skip", int, 0))
+        parameters.append(_param("limit", int, 100))
+    if route.suggest:
+        parameters.append(_param("q", str, ""))
+        parameters.append(_param("limit", int, 10))
     endpoint.__signature__ = inspect.Signature(parameters)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
     endpoint.__name__ = route.name
     return endpoint

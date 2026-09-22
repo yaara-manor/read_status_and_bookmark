@@ -255,6 +255,36 @@ export type NewPassword = {
 };
 
 /**
+ * PerformerGenre
+ */
+export type PerformerGenre = 'MUSIC' | 'SPORT' | 'THEATRE' | 'CIRCUS';
+
+/**
+ * PerformerMatch
+ */
+export type PerformerMatch = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    genre: PerformerGenre;
+};
+
+/**
+ * PerformersMatch
+ */
+export type PerformersMatch = {
+    /**
+     * Data
+     */
+    data: Array<PerformerMatch>;
+};
+
+/**
  * RecoveryEmail
  */
 export type RecoveryEmail = {
@@ -478,6 +508,30 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * VenueMatch
+ */
+export type VenueMatch = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * VenuesMatch
+ */
+export type VenuesMatch = {
+    /**
+     * Data
+     */
+    data: Array<VenueMatch>;
 };
 
 export type healthHealthCheckData = {
@@ -828,6 +882,74 @@ export type usersUpdateUserResponses = {
 };
 
 export type usersUpdateUserResponse = usersUpdateUserResponses[keyof usersUpdateUserResponses];
+
+export type eventsSuggestVenuesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/venues';
+};
+
+export type eventsSuggestVenuesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type eventsSuggestVenuesError = eventsSuggestVenuesErrors[keyof eventsSuggestVenuesErrors];
+
+export type eventsSuggestVenuesResponses = {
+    /**
+     * Successful Response
+     */
+    200: VenuesMatch;
+};
+
+export type eventsSuggestVenuesResponse = eventsSuggestVenuesResponses[keyof eventsSuggestVenuesResponses];
+
+export type eventsSuggestPerformersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Q
+         */
+        q?: string;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/performers';
+};
+
+export type eventsSuggestPerformersErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type eventsSuggestPerformersError = eventsSuggestPerformersErrors[keyof eventsSuggestPerformersErrors];
+
+export type eventsSuggestPerformersResponses = {
+    /**
+     * Successful Response
+     */
+    200: PerformersMatch;
+};
+
+export type eventsSuggestPerformersResponse = eventsSuggestPerformersResponses[keyof eventsSuggestPerformersResponses];
 
 export type eventsReadEventsData = {
     body?: never;

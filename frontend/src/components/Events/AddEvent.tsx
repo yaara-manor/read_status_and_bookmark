@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type EventCreate, EventsService } from "@/client"
+import NamePicker from "@/components/Events/NamePicker"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,8 +34,8 @@ import { handleError } from "@/utils"
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   description: z.string().optional(),
-  venue_id: z.string().min(1, { message: "Venue ID is required" }),
-  performer_id: z.string().min(1, { message: "Performer ID is required" }),
+  venue_id: z.string().min(1, { message: "Choose a venue" }),
+  performer_id: z.string().min(1, { message: "Choose a performer" }),
   time: z.string().min(1, { message: "Time is required" }),
   price: z
     .string()
@@ -49,6 +50,40 @@ type FormData = z.infer<typeof formSchema>
 function apiTime(value: string) {
   return value.length === 16 ? `${value}:00Z` : value
 }
+
+const nameFields = [
+  {
+    name: "venue_id",
+    label: "Venue",
+    placeholder: "Main Hall",
+    queryKey: "venues",
+    search: async (query: string) => {
+      const result = await EventsService.suggestVenues({
+        query: { q: query, limit: 10 },
+      })
+      return (result.data?.data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+      }))
+    },
+  },
+  {
+    name: "performer_id",
+    label: "Performer",
+    placeholder: "The Band",
+    queryKey: "performers",
+    search: async (query: string) => {
+      const result = await EventsService.suggestPerformers({
+        query: { q: query, limit: 10 },
+      })
+      return (result.data?.data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        hint: row.genre,
+      }))
+    },
+  },
+] as const
 
 const AddEvent = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -145,46 +180,26 @@ const AddEvent = () => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="venue_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Venue ID <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Venue ID"
-                        type="text"
-                        {...field}
-                        required
+              {nameFields.map((picker) => (
+                <FormField
+                  key={picker.name}
+                  control={form.control}
+                  name={picker.name}
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <NamePicker
+                        label={picker.label}
+                        placeholder={picker.placeholder}
+                        queryKey={picker.queryKey}
+                        id={field.value}
+                        error={fieldState.error?.message}
+                        onPick={field.onChange}
+                        search={picker.search}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="performer_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Performer ID <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Performer ID"
-                        type="text"
-                        {...field}
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </FormItem>
+                  )}
+                />
+              ))}
               <FormField
                 control={form.control}
                 name="time"
