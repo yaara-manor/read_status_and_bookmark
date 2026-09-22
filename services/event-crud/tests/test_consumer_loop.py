@@ -92,14 +92,6 @@ def test_apply_user_created_through_apply_seeds_when_superuser(db: Session) -> N
     assert event.owner_id == owner_id
 
 
-def test_apply_rejects_mismatched_created_payload(db: Session) -> None:
-    message = UserMessage.model_construct(
-        event_name="UserCreated", payload=UserDeleted(id=uuid.uuid4())
-    )
-    with pytest.raises(ValueError, match="payload does not match event_name"):
-        _apply(db, message)
-
-
 def test_apply_user_updated_through_apply_renames_creator(db: Session) -> None:
     owner_id = uuid.uuid4()
     owned = create_random_event(db, creator="Old Name", owner_id=owner_id)
@@ -116,14 +108,6 @@ def test_apply_user_updated_through_apply_renames_creator(db: Session) -> None:
     assert updated.creator == "New Name"
 
 
-def test_apply_rejects_mismatched_updated_payload(db: Session) -> None:
-    message = UserMessage.model_construct(
-        event_name="UserUpdated", payload=UserDeleted(id=uuid.uuid4())
-    )
-    with pytest.raises(ValueError, match="payload does not match event_name"):
-        _apply(db, message)
-
-
 def test_apply_user_deleted_through_apply_removes_owned_event(db: Session) -> None:
     owner_id = uuid.uuid4()
     owned = create_random_event(db, creator="Owner", owner_id=owner_id)
@@ -132,19 +116,8 @@ def test_apply_user_deleted_through_apply_removes_owned_event(db: Session) -> No
     assert db.get(Event, owned.id) is None
 
 
-def test_apply_rejects_mismatched_deleted_payload(db: Session) -> None:
-    message = UserMessage.model_construct(
-        event_name="UserDeleted",
-        payload=UserUpdated(id=uuid.uuid4(), display_name="Ada"),
-    )
-    with pytest.raises(ValueError, match="payload does not match event_name"):
-        _apply(db, message)
-
-
-def test_apply_rejects_unknown_event_name(db: Session) -> None:
-    message = UserMessage.model_construct(
-        event_name="Other", payload=UserDeleted(id=uuid.uuid4())
-    )
+def test_apply_rejects_unknown_payload_type(db: Session) -> None:
+    message = UserMessage.model_construct(event_name="UserCreated", payload="nope")
     with pytest.raises(AssertionError):
         _apply(db, message)
 

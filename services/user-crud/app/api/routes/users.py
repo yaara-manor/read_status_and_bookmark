@@ -6,7 +6,6 @@ from contracts import (
     Message,
     UpdatePassword,
     UserCreate,
-    UserCreated,
     UserDeleted,
     UserMessage,
     UserPublic,
@@ -25,6 +24,7 @@ from app.api.deps import (
     require_internal_key,
     require_superuser,
 )
+from app.api.mount import mount_catalog
 from app.core.security import get_password_hash, verify_password
 from app.models import User
 from app.outbox import display_name, write_outbox
@@ -94,7 +94,6 @@ def _delete(session: SessionDep, user: User, caller: Caller) -> Message:
     return Message(message="User deleted successfully")
 
 
-@router.get("/users", dependencies=[Depends(require_superuser)])
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> UsersPublic:
     count = session.exec(select(func.count()).select_from(User)).one()
     users = session.exec(
@@ -103,30 +102,14 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> UsersPub
     return UsersPublic(data=[_public(user) for user in users], count=count)
 
 
-@router.post("/users", dependencies=[Depends(require_superuser)])
 def create_user(session: SessionDep, user_in: UserCreate) -> UserPublic:
     if crud.get_user_by_email(session=session, email=user_in.email):
         raise HTTPException(
             status_code=409, detail="User with this email already exists"
         )
-    created = crud.create_user(session=session, user_create=user_in)
-    write_outbox(
-        session,
-        UserMessage(
-            event_name="UserCreated",
-            payload=UserCreated(
-                id=created.id,
-                display_name=display_name(created),
-                is_superuser=created.is_superuser,
-            ),
-        ),
-    )
-    session.commit()
-    session.refresh(created)
-    return _public(created)
+    return _public(crud.create_user(session=session, user_create=user_in))
 
 
-@router.patch("/users/me")
 def update_user_me(
     session: SessionDep, user_in: UserUpdateMe, caller: CallerDep
 ) -> UserPublic:
@@ -135,7 +118,6 @@ def update_user_me(
     return _public(user=_save(session, user, user_in.model_dump(exclude_unset=True)))
 
 
-@router.patch("/users/me/password")
 def update_password_me(
     session: SessionDep, body: UpdatePassword, caller: CallerDep
 ) -> Message:
@@ -154,17 +136,14 @@ def update_password_me(
     return Message(message="Password updated successfully")
 
 
-@router.get("/users/me")
 def read_user_me(session: SessionDep, caller: CallerDep) -> UserPublic:
     return _public(_user_or_404(session, caller.id, _NOT_FOUND))
 
 
-@router.delete("/users/me")
 def delete_user_me(session: SessionDep, caller: CallerDep) -> Message:
     return _delete(session, _user_or_404(session, caller.id, _NOT_FOUND), caller)
 
 
-@router.get("/users/{user_id}")
 def read_user_by_id(
     user_id: uuid.UUID, session: SessionDep, caller: CallerDep
 ) -> UserPublic:
@@ -180,7 +159,6 @@ def read_user_by_id(
     return _public(user)
 
 
-@router.patch("/users/{user_id}", dependencies=[Depends(require_superuser)])
 def update_user(
     session: SessionDep, user_id: uuid.UUID, user_in: UserUpdate
 ) -> UserPublic:
@@ -189,6 +167,30 @@ def update_user(
     return _public(_save(session, user, user_in.model_dump(exclude_unset=True)))
 
 
-@router.delete("/users/{user_id}", dependencies=[Depends(require_superuser)])
 def delete_user(session: SessionDep, caller: CallerDep, user_id: uuid.UUID) -> Message:
     return _delete(session, _user_or_404(session, user_id, _NOT_FOUND), caller)
+
+
+_SUPERUSER = Depends(require_superuser)
+mount_catalog(
+    router,
+    {
+        "read_users": read_users,
+        "create_user": create_user,
+        "update_user_me": update_user_me,
+        "update_password_me": update_password_me,
+        "read_user_me": read_user_me,
+        "delete_user_me": delete_user_me,
+        "read_user_by_id": read_user_by_id,
+        "update_user": update_user,
+        "delete_user": delete_user,
+    },
+    service="user",
+    tag="users",
+    extra={
+        "read_users": [_SUPERUSER],
+        "create_user": [_SUPERUSER],
+        "update_user": [_SUPERUSER],
+        "delete_user": [_SUPERUSER],
+    },
+)

@@ -14,6 +14,8 @@ todos:
 isProject: false
 ---
 
+> **Superseded.** The monolith is gone. Public routes live in the contracts catalog. User writes live in `services/user-crud`. Event writes live in `services/event-crud`. Do not follow the steps below.
+
 # Shareable items
 
 Bounded change. No share table, no tokens, no Alembic, **no `GET /users/{id}` change**. Frontend has no SQL. Owner name comes from a **backend join** on `item.owner_id` = `user.id`, returned as `ItemPublic.creator`.

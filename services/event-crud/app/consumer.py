@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-from datetime import UTC, datetime
 from typing import Literal, assert_never
 
 import redis
@@ -9,8 +8,6 @@ from contracts import (
     CONSUMER_GROUP,
     DEAD_STREAM,
     STREAM,
-    EventCreate,
-    PerformerGenre,
     UserCreated,
     UserDeleted,
     UserMessage,
@@ -19,10 +16,10 @@ from contracts import (
 )
 from sqlmodel import Session, select
 
-from app import crud
 from app.core.config import settings
 from app.core.db import engine
-from app.models import Event, EventBookmarkLink, EventReadLink, Performer, Ticket, Venue
+from app.models import Event, EventBookmarkLink, EventReadLink, Ticket
+from app.seed import seed_demo
 
 logger = logging.getLogger(__name__)
 
@@ -42,42 +39,6 @@ def outcome(handled: bool, times_delivered: int) -> Literal["ack", "retry", "dea
     if times_delivered >= 5:
         return "dead"
     return "retry"
-
-
-def apply_user_created(session: Session, payload: UserCreated) -> None:
-    if not payload.is_superuser:
-        return
-    # ponytail: venue.name is not unique, so two overlapping superuser messages can
-    # both seed. Upgrade: a unique index on venue.name.
-    if session.exec(select(Venue).where(Venue.name == "Main Hall")).first() is not None:
-        return
-    venue = Venue(
-        name="Main Hall",
-        city="Tel Aviv",
-        country="Israel",
-        seat_map=[4, 5, 5, 7],
-    )
-    performer = Performer(
-        name="The Band",
-        genre=PerformerGenre.MUSIC,
-        description="Live music",
-    )
-    session.add(venue)
-    session.add(performer)
-    session.flush()
-    crud.create_event(
-        session=session,
-        event_in=EventCreate(
-            name="Opening Night",
-            description="First show of the season",
-            venue_id=venue.id,
-            performer_id=performer.id,
-            time=datetime(2026, 10, 1, 20, 0, tzinfo=UTC),
-            price=25.0,
-        ),
-        owner_id=payload.id,
-        creator=payload.display_name,
-    )
 
 
 def apply_user_updated(session: Session, payload: UserUpdated) -> None:
@@ -107,19 +68,13 @@ def apply_user_deleted(session: Session, payload: UserDeleted) -> None:
 
 
 def _apply(session: Session, message: UserMessage) -> None:
-    payload = message.payload
-    match message.event_name:
-        case "UserCreated":
-            if not isinstance(payload, UserCreated):
-                raise ValueError("payload does not match event_name")
-            apply_user_created(session, payload)
-        case "UserUpdated":
-            if not isinstance(payload, UserUpdated):
-                raise ValueError("payload does not match event_name")
+    match message.payload:
+        case UserCreated() as payload:
+            if payload.is_superuser:
+                seed_demo(session, payload.id, payload.display_name)
+        case UserUpdated() as payload:
             apply_user_updated(session, payload)
-        case "UserDeleted":
-            if not isinstance(payload, UserDeleted):
-                raise ValueError("payload does not match event_name")
+        case UserDeleted() as payload:
             apply_user_deleted(session, payload)
         case _ as unreachable:
             assert_never(unreachable)

@@ -18,6 +18,7 @@ def test_offline_upgrade_emits_event_tables(capsys: pytest.CaptureFixture[str]) 
     sql = capsys.readouterr().out
     assert "CREATE TABLE event (" in sql
     assert "CREATE TABLE venue" in sql
+    assert "uq_venue_name" in sql
 
 
 def test_offline_downgrade_emits_drop_sql(capsys: pytest.CaptureFixture[str]) -> None:

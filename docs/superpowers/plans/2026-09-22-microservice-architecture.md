@@ -1,10 +1,12 @@
+> **Finished migration record.** This plan is history, not the next implementation steps. The split it describes is already on this branch.
+
 # Microservice Architecture Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the single FastAPI app with an API Gateway, a User CRUD Service, and an Event CRUD Service, and move user-delete, seed, and creator refresh onto a Redis stream.
 
-**Architecture:** The gateway owns the public `/api/v1` routes and forwards the path, query, and body unchanged. The User CRUD Service writes an outbox row in the same transaction as a user create, display-name change, or delete. A publisher loop appends that row to Redis. The Event CRUD Service consumes the stream and never reads the user table. One Postgres database holds both schemas, with two Alembic version tables. `backend/` is deleted only after the three services and the frontend pass.
+**Architecture:** The public `/api/v1` routes are declared once in the contracts catalog. The gateway mounts a proxy for each entry and forwards the path, query, and body unchanged. The User CRUD Service writes an outbox row in the same transaction as a user create, display-name change, or delete. A publisher loop appends that row to Redis. The Event CRUD Service consumes the stream and never reads the user table. One Postgres database holds both schemas, with two Alembic version tables. `backend/` is deleted only after the three services and the frontend pass.
 
 **Tech Stack:** FastAPI, SQLModel, Alembic, Pydantic, Postgres, Redis streams, httpx, pytest, the existing uv workspace, Docker Compose, Playwright.
 
@@ -24,7 +26,7 @@
 - `POST /dev/users` exists only when `FASTAPI_ENV=development`.
 - Venue and performer have no public routes. Event behavior stays the event schema spec: list newest `created_at` first, bookmarked list, detail marks seen and includes tickets, bookmark body `{ "is_bookmarked": bool }`, create writes one `AVAILABLE` ticket per seat, update changes `name`, `description`, `time`, `performer_id` only, delete is owner or superuser.
 - Error strings that stay: `Incorrect email or password`, `If that email is registered, we sent a password recovery link`, `Invalid token`, `Password updated successfully`, `The user with this email already exists in the system` (public signup, `400`), `User with this email already exists` (`409`), `Incorrect password`, `New password cannot be the same as the current one`, `Super users are not allowed to delete themselves`, `The user doesn't have enough privileges`, `User not found`, `The user with this id does not exist in the system`, `User deleted successfully`, `Event not found`, `Not enough permissions`, `Venue not found`, `Performer not found`, `Invalid seat map`, `Event deleted successfully`. Admin create of a duplicate email is `409` with `User with this email already exists` (today's handler returns `400`; do not keep that).
-- Seed, only when `UserCreated.is_superuser` is true and no venue is named `Main Hall`: venue `Main Hall` / `Tel Aviv` / `Israel` / `[4, 5, 5, 7]`; performer `The Band` / `MUSIC` / `Live music`; event `Opening Night` / `First show of the season` / `2026-10-01T20:00:00Z` / price `25.0`, `owner_id` and `creator` from the message. Ticket generation stays inside `create_event`. `LookupError` and `ValueError` stay. No service class, repository, or custom exception type.
+- Seed, via `seed_demo` when a superuser `UserCreated` arrives and no venue is named `Main Hall`: venue `Main Hall` / `Tel Aviv` / `Israel` / `[4, 5, 5, 7]`; performer `The Band` / `MUSIC` / `Live music`; event `Opening Night` / `First show of the season` / `2026-10-01T20:00:00Z` / price `25.0`, `owner_id` and `creator` from the message. Ticket generation stays inside `create_event`. `LookupError` and `ValueError` stay. No service class, repository, or custom exception type.
 - Coverage fail-under stays 90 for the User CRUD Service and the Event CRUD Service. The gateway suite has no coverage floor.
 - `git add` only the files named in that task. The worktree has unrelated untracked files. Do not stage them.
 - Do not add a dependency other than the Redis client `redis>=5.0,<7` on the two domain services.

@@ -6,7 +6,13 @@ from pathlib import Path
 
 import httpx
 import pytest
-from contracts import CALLER_HEADER, INTERNAL_KEY_HEADER, Caller, encode_caller
+from contracts import (
+    CALLER_HEADER,
+    INTERNAL_KEY_HEADER,
+    PUBLIC_ROUTES,
+    Caller,
+    encode_caller,
+)
 from fastapi.testclient import TestClient
 
 # Sibling services are also named app. Drop them so this tree wins.
@@ -302,3 +308,24 @@ def test_development_openapi_lists_dev_users_and_hides_resolve(
         scheme.get("type") == "http" and scheme.get("scheme") == "bearer"
         for scheme in schemes.values()
     )
+
+
+def test_openapi_operation_ids_match_the_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(request.url.path)
+
+    document = _client(monkeypatch, handler).get("/api/v1/openapi.json").json()
+    found = {
+        (method.upper(), path, operation["operationId"])
+        for path, methods in document["paths"].items()
+        for method, operation in methods.items()
+        if method != "parameters"
+    }
+    expected = {("GET", "/api/v1/health", "health-health_check")}
+    expected.update(
+        (route.method, f"/api/v1{route.path}", f"{route.tag}-{route.name}")
+        for route in PUBLIC_ROUTES
+    )
+    assert found == expected

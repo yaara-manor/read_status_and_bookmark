@@ -5,11 +5,8 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api.auth import router as auth_router
-from app.api.dev import router as dev_router
-from app.api.events import router as events_router
 from app.api.health import router as health_router
-from app.api.users import router as users_router
+from app.api.public import public_router
 from app.core.config import settings
 
 API_V1 = "/api/v1"
@@ -38,10 +35,9 @@ app.add_middleware(
 )
 
 app.include_router(health_router, prefix=API_V1)
-app.include_router(auth_router, prefix=API_V1)
-app.include_router(users_router, prefix=API_V1)
-app.include_router(events_router, prefix=API_V1)
-if settings.FASTAPI_ENV == "development":
-    app.include_router(dev_router, prefix=API_V1)
+app.include_router(
+    public_router(include_dev=settings.FASTAPI_ENV == "development"),
+    prefix=API_V1,
+)
 if FRONTEND_DIR.is_dir():
     app.frontend("/", directory=FRONTEND_DIR)

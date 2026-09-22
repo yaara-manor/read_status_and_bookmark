@@ -27,6 +27,7 @@ from contracts.messages import (
     dump_message,
     load_message,
 )
+from contracts.routes import PUBLIC_ROUTES, PublicRoute
 from contracts.users import (
     DevUserCreate,
     LoginRequest,
@@ -48,6 +49,7 @@ __all__ = [
     "CONSUMER_GROUP",
     "DEAD_STREAM",
     "INTERNAL_KEY_HEADER",
+    "PUBLIC_ROUTES",
     "STREAM",
     "Caller",
     "DevUserCreate",
@@ -61,6 +63,7 @@ __all__ = [
     "Message",
     "NewPassword",
     "PerformerGenre",
+    "PublicRoute",
     "RecoveryEmail",
     "TicketAvailability",
     "TicketPublic",

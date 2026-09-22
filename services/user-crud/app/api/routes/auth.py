@@ -5,19 +5,18 @@ from contracts import (
     LoginRequest,
     Message,
     NewPassword,
+    RecoveryEmail,
     Token,
     UserCreate,
-    UserCreated,
-    UserMessage,
     UserPublic,
     UserRegister,
     UserUpdate,
 )
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from app import crud
 from app.api.deps import SessionDep, require_internal_key
+from app.api.mount import mount_catalog
 from app.core import security
 from app.core.config import settings
 from app.email import (
@@ -26,18 +25,12 @@ from app.email import (
     send_email,
     verify_password_reset_token,
 )
-from app.outbox import display_name, write_outbox
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/auth", dependencies=[Depends(require_internal_key)])
+router = APIRouter(dependencies=[Depends(require_internal_key)])
 
 
-class _RecoveryEmail(BaseModel):
-    email: str
-
-
-@router.post("/login")
 def login(session: SessionDep, body: LoginRequest) -> Token:
     user = crud.authenticate(session=session, email=body.email, password=body.password)
     if not user:
@@ -52,7 +45,6 @@ def login(session: SessionDep, body: LoginRequest) -> Token:
     )
 
 
-@router.post("/register")
 def register(session: SessionDep, user_in: UserRegister) -> UserPublic:
     if crud.get_user_by_email(session=session, email=user_in.email):
         raise HTTPException(
@@ -63,24 +55,10 @@ def register(session: SessionDep, user_in: UserRegister) -> UserPublic:
         session=session,
         user_create=UserCreate.model_validate(user_in.model_dump()),
     )
-    write_outbox(
-        session,
-        UserMessage(
-            event_name="UserCreated",
-            payload=UserCreated(
-                id=created.id,
-                display_name=display_name(created),
-                is_superuser=created.is_superuser,
-            ),
-        ),
-    )
-    session.commit()
-    session.refresh(created)
     return UserPublic.model_validate(created.model_dump())
 
 
-@router.post("/password-recovery")
-def recover_password(session: SessionDep, body: _RecoveryEmail) -> Message:
+def recover_password(session: SessionDep, body: RecoveryEmail) -> Message:
     user = crud.get_user_by_email(session=session, email=body.email)
     if user:
         password_reset_token = generate_password_reset_token(email=body.email)
@@ -100,7 +78,6 @@ def recover_password(session: SessionDep, body: _RecoveryEmail) -> Message:
     )
 
 
-@router.post("/reset-password")
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
     email = verify_password_reset_token(token=body.token)
     if not email:
@@ -116,3 +93,16 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
         user_in=UserUpdate(password=body.new_password),
     )
     return Message(message="Password updated successfully")
+
+
+mount_catalog(
+    router,
+    {
+        "login": login,
+        "register": register,
+        "recover_password": recover_password,
+        "reset_password": reset_password,
+    },
+    service="user",
+    tag="auth",
+)

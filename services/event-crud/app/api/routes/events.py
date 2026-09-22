@@ -17,9 +17,10 @@ from sqlmodel import Session, col, func, select
 
 from app import crud
 from app.api.deps import CallerDep, SessionDep
+from app.api.mount import mount_catalog
 from app.models import Event, EventBookmarkLink, EventReadLink, Ticket
 
-router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter()
 
 
 def event_public(event: Event, *, is_read: bool, is_bookmarked: bool) -> EventPublic:
@@ -78,7 +79,6 @@ def _require_editor(caller: Caller, event: Event) -> None:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
 
-@router.get("", response_model=EventsPublic)
 def read_events(
     session: SessionDep, caller: CallerDep, skip: int = 0, limit: int = 100
 ) -> Any:
@@ -102,7 +102,6 @@ def read_events(
     )
 
 
-@router.get("/bookmarked", response_model=EventsPublic)
 def read_bookmarked_events(
     session: SessionDep, caller: CallerDep, skip: int = 0, limit: int = 100
 ) -> Any:
@@ -131,7 +130,6 @@ def read_bookmarked_events(
     )
 
 
-@router.get("/{id}", response_model=EventDetail)
 def read_event(session: SessionDep, caller: CallerDep, id: uuid.UUID) -> Any:
     event = session.get(Event, id)
     if not event:
@@ -150,7 +148,6 @@ def read_event(session: SessionDep, caller: CallerDep, id: uuid.UUID) -> Any:
     )
 
 
-@router.put("/{id}/bookmark", response_model=EventPublic)
 def set_event_bookmark(
     *,
     session: SessionDep,
@@ -172,7 +169,6 @@ def set_event_bookmark(
     return event_public(event, is_read=is_read, is_bookmarked=body.is_bookmarked)
 
 
-@router.post("", response_model=EventPublic)
 def create_event(
     *, session: SessionDep, caller: CallerDep, event_in: EventCreate
 ) -> Any:
@@ -190,7 +186,6 @@ def create_event(
     return event_public(event, is_read=False, is_bookmarked=False)
 
 
-@router.put("/{id}", response_model=EventPublic)
 def update_event(
     *,
     session: SessionDep,
@@ -211,7 +206,6 @@ def update_event(
     return event_public(event, is_read=is_read, is_bookmarked=is_bookmarked)
 
 
-@router.delete("/{id}")
 def delete_event(session: SessionDep, caller: CallerDep, id: uuid.UUID) -> Message:
     event = session.get(Event, id)
     if not event:
@@ -220,3 +214,19 @@ def delete_event(session: SessionDep, caller: CallerDep, id: uuid.UUID) -> Messa
     session.delete(event)
     session.commit()
     return Message(message="Event deleted successfully")
+
+
+mount_catalog(
+    router,
+    {
+        "read_events": read_events,
+        "read_bookmarked_events": read_bookmarked_events,
+        "read_event": read_event,
+        "set_event_bookmark": set_event_bookmark,
+        "create_event": create_event,
+        "update_event": update_event,
+        "delete_event": delete_event,
+    },
+    service="event",
+    tag="events",
+)

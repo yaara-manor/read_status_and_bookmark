@@ -1,10 +1,11 @@
 from typing import Any
 
-from contracts import UserCreate, UserUpdate
+from contracts import UserCreate, UserCreated, UserMessage, UserUpdate
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models import User
+from app.outbox import display_name, write_outbox
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -12,8 +13,20 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
     session.add(db_obj)
-    # Flush so the id exists; the caller commits with the outbox row.
     session.flush()
+    write_outbox(
+        session,
+        UserMessage(
+            event_name="UserCreated",
+            payload=UserCreated(
+                id=db_obj.id,
+                display_name=display_name(db_obj),
+                is_superuser=db_obj.is_superuser,
+            ),
+        ),
+    )
+    session.commit()
+    session.refresh(db_obj)
     return db_obj
 
 

@@ -16,7 +16,7 @@ class Venue(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     city: str = Field(max_length=255)
     country: str = Field(max_length=255)
-    name: str = Field(max_length=255)
+    name: str = Field(max_length=255, unique=True)
     seat_map: list[int] = Field(sa_column=Column(ARRAY(Integer), nullable=False))
 
 

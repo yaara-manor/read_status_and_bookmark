@@ -1,21 +1,19 @@
 import uuid
 from datetime import UTC, datetime
 
+import pytest
 from contracts import (
     PerformerGenre,
     TicketAvailability,
     UserCreated,
     UserDeleted,
+    UserMessage,
     UserUpdated,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
-from app.consumer import (
-    apply_user_created,
-    apply_user_deleted,
-    apply_user_updated,
-    outcome,
-)
+from app.consumer import _apply, apply_user_deleted, apply_user_updated, outcome
 from app.models import (
     Event,
     EventBookmarkLink,
@@ -24,6 +22,7 @@ from app.models import (
     Ticket,
     Venue,
 )
+from app.seed import seed_demo
 from tests.utils.event import create_random_event
 
 
@@ -53,10 +52,7 @@ def _clear_main_hall(db: Session) -> None:
 def test_superuser_created_seeds_opening_night(db: Session) -> None:
     _clear_main_hall(db)
     owner_id = uuid.uuid4()
-    apply_user_created(
-        db,
-        UserCreated(id=owner_id, display_name="Ada Lovelace", is_superuser=True),
-    )
+    seed_demo(db, owner_id, "Ada Lovelace")
 
     venue = _main_hall(db)
     assert venue is not None
@@ -84,9 +80,14 @@ def test_superuser_created_seeds_opening_night(db: Session) -> None:
 
 def test_non_superuser_created_does_not_seed(db: Session) -> None:
     _clear_main_hall(db)
-    apply_user_created(
+    _apply(
         db,
-        UserCreated(id=uuid.uuid4(), display_name="Grace Hopper", is_superuser=False),
+        UserMessage(
+            event_name="UserCreated",
+            payload=UserCreated(
+                id=uuid.uuid4(), display_name="Grace Hopper", is_superuser=False
+            ),
+        ),
     )
     assert _main_hall(db) is None
     assert db.exec(select(Event).where(Event.name == "Opening Night")).first() is None
@@ -95,20 +96,30 @@ def test_non_superuser_created_does_not_seed(db: Session) -> None:
 def test_second_superuser_created_does_not_add_another_main_hall(db: Session) -> None:
     _clear_main_hall(db)
     first_id = uuid.uuid4()
-    apply_user_created(
-        db,
-        UserCreated(id=first_id, display_name="Ada Lovelace", is_superuser=True),
-    )
-    apply_user_created(
-        db,
-        UserCreated(id=uuid.uuid4(), display_name="Grace Hopper", is_superuser=True),
-    )
+    seed_demo(db, first_id, "Ada Lovelace")
+    seed_demo(db, uuid.uuid4(), "Grace Hopper")
 
     halls = db.exec(select(Venue).where(Venue.name == "Main Hall")).all()
     assert len(halls) == 1
     event = db.exec(select(Event).where(Event.name == "Opening Night")).one()
     assert event.owner_id == first_id
     assert event.creator == "Ada Lovelace"
+
+
+def test_seed_demo_rolls_back_when_venue_name_races(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _clear_main_hall(db)
+    real_flush = Session.flush
+
+    def boom(self: Session, *args: object, **kwargs: object) -> None:
+        if self.new:
+            raise IntegrityError("INSERT", {}, Exception("uq_venue_name"))
+        real_flush(self, *args, **kwargs)
+
+    monkeypatch.setattr(Session, "flush", boom)
+    seed_demo(db, uuid.uuid4(), "Ada")
+    assert _main_hall(db) is None
 
 
 def test_user_updated_changes_creator_only_for_that_owner(db: Session) -> None:
