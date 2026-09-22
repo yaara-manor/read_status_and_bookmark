@@ -45,6 +45,16 @@ export type HTTPValidationError = {
 };
 
 /**
+ * ItemBookmarkUpdate
+ */
+export type ItemBookmarkUpdate = {
+    /**
+     * Is Bookmarked
+     */
+    is_bookmarked: boolean;
+};
+
+/**
  * ItemCreate
  */
 export type ItemCreate = {
@@ -90,6 +100,10 @@ export type ItemPublic = {
      * Is Read
      */
     is_read?: boolean;
+    /**
+     * Is Bookmarked
+     */
+    is_bookmarked?: boolean;
 };
 
 /**
@@ -839,6 +853,40 @@ export type itemsCreateItemResponses = {
 
 export type itemsCreateItemResponse = itemsCreateItemResponses[keyof itemsCreateItemResponses];
 
+export type itemsReadBookmarkedItemsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/items/bookmarked';
+};
+
+export type itemsReadBookmarkedItemsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type itemsReadBookmarkedItemsError = itemsReadBookmarkedItemsErrors[keyof itemsReadBookmarkedItemsErrors];
+
+export type itemsReadBookmarkedItemsResponses = {
+    /**
+     * Successful Response
+     */
+    200: ItemsPublic;
+};
+
+export type itemsReadBookmarkedItemsResponse = itemsReadBookmarkedItemsResponses[keyof itemsReadBookmarkedItemsResponses];
+
 export type itemsDeleteItemData = {
     body?: never;
     path: {
@@ -928,6 +976,36 @@ export type itemsUpdateItemResponses = {
 };
 
 export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+
+export type itemsSetItemBookmarkData = {
+    body: ItemBookmarkUpdate;
+    path: {
+        /**
+         * Id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/items/{id}/bookmark';
+};
+
+export type itemsSetItemBookmarkErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type itemsSetItemBookmarkError = itemsSetItemBookmarkErrors[keyof itemsSetItemBookmarkErrors];
+
+export type itemsSetItemBookmarkResponses = {
+    /**
+     * Successful Response
+     */
+    200: ItemPublic;
+};
+
+export type itemsSetItemBookmarkResponse = itemsSetItemBookmarkResponses[keyof itemsSetItemBookmarkResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

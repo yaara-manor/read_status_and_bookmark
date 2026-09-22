@@ -10,7 +10,9 @@ import { logInUser, logOutUser } from "./utils/user"
 
 test("Items page is accessible and shows correct title", async ({ page }) => {
   await page.goto("/items")
-  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Items", exact: true }),
+  ).toBeVisible()
   await expect(page.getByText("Create and manage your items")).toBeVisible()
 })
 
@@ -21,13 +23,17 @@ test("Add Item button is visible", async ({ page }) => {
 
 test("unknown item redirects to items with not found", async ({ page }) => {
   await page.goto(`/items/${crypto.randomUUID()}`)
-  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Items", exact: true }),
+  ).toBeVisible()
   await expect(page.getByText("Item not found")).toBeVisible()
 })
 
 test("invalid item id redirects to items with not found", async ({ page }) => {
   await page.goto("/items/not-a-uuid")
-  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "Items", exact: true }),
+  ).toBeVisible()
   await expect(page.getByText("Item not found")).toBeVisible()
 })
 
@@ -151,7 +157,112 @@ test.describe("Items management", () => {
     await itemRow.getByRole("button", { name: "Copy ID" }).click()
 
     await expect(page).toHaveURL(/\/items$/)
-    await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "Items", exact: true }),
+    ).toBeVisible()
+  })
+
+  test("bookmarking an item from the table shows it on Bookmarked", async ({
+    page,
+  }) => {
+    const title = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    await itemRow.getByTestId("bookmark-toggle").click()
+    await expect(page).toHaveURL(/\/items$/)
+    await expect(itemRow.getByTestId("bookmark-toggle")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+
+    await page.getByRole("link", { name: "Bookmarked" }).click()
+    await expect(
+      page.getByRole("heading", { name: "Bookmarked" }),
+    ).toBeVisible()
+    await expect(page.getByRole("row").filter({ hasText: title })).toBeVisible()
+  })
+
+  test("unbookmarking on Bookmarked removes the row immediately", async ({
+    page,
+  }) => {
+    const title = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    await itemRow.getByTestId("bookmark-toggle").click()
+    await page.getByRole("link", { name: "Bookmarked" }).click()
+
+    const bookmarkedRow = page.getByRole("row").filter({ hasText: title })
+    await expect(bookmarkedRow).toBeVisible()
+    await bookmarkedRow.getByTestId("bookmark-toggle").click()
+    await expect(bookmarkedRow).toHaveCount(0)
+    await expect(
+      page.getByRole("heading", { name: "Bookmarked" }),
+    ).toBeVisible()
+  })
+
+  test("bookmarking from the item page stays in sync with both lists", async ({
+    page,
+  }) => {
+    const title = randomItemTitle()
+
+    await page.getByRole("button", { name: "Add Item" }).click()
+    await page.getByLabel("Title").fill(title)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("Item created successfully")).toBeVisible()
+
+    const itemRow = page.getByRole("row").filter({ hasText: title })
+    const id = (await itemRow.locator(".font-mono").innerText()).trim()
+    await itemRow.getByText(title).click()
+    await expect(page).toHaveURL(new RegExp(`/items/${id}$`))
+    await expect(page.getByRole("heading", { name: title })).toBeVisible()
+
+    await page.getByTestId("bookmark-toggle").click()
+    await expect(page.getByTestId("bookmark-toggle")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+
+    await page.getByRole("link", { name: "Bookmarked" }).click()
+    await expect(page.getByRole("row").filter({ hasText: title })).toBeVisible()
+
+    await page.getByRole("link", { name: "Items" }).click()
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: title })
+        .getByTestId("bookmark-toggle"),
+    ).toHaveAttribute("aria-pressed", "true")
+
+    await page.goto(`/items/${id}`)
+    await expect(page.getByRole("heading", { name: title })).toBeVisible()
+    await page.getByTestId("bookmark-toggle").click()
+    await expect(page.getByTestId("bookmark-toggle")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    )
+
+    await page.getByRole("link", { name: "Bookmarked" }).click()
+    await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(
+      0,
+    )
+
+    await page.getByRole("link", { name: "Items" }).click()
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: title })
+        .getByTestId("bookmark-toggle"),
+    ).toHaveAttribute("aria-pressed", "false")
   })
 
   test("row actions menu does not open the item page", async ({ page }) => {
@@ -243,7 +354,9 @@ test.describe("Items management", () => {
       await expect(
         page.getByText("The item was deleted successfully"),
       ).toBeVisible()
-      await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+      await expect(
+        page.getByRole("heading", { name: "Items", exact: true }),
+      ).toBeVisible()
       await expect(page.getByText(itemTitle)).not.toBeVisible()
       await expect(page.getByText("Item not found")).not.toBeVisible()
     })
@@ -275,10 +388,15 @@ test.describe("Shared items", () => {
     const itemRow = page.getByRole("row").filter({ hasText: title })
     await expect(itemRow).toBeVisible()
     await expect(itemRow.getByText("Test User")).toBeVisible()
-    await expect(itemRow.getByRole("button")).toHaveCount(1)
+    await expect(itemRow.getByRole("button", { name: "Copy ID" })).toBeVisible()
+    await expect(itemRow.getByTestId("bookmark-toggle")).toBeVisible()
+    await expect(
+      itemRow.getByRole("button", { name: "Item actions" }),
+    ).toHaveCount(0)
 
     await itemRow.getByText(title).click()
     await expect(page.getByRole("heading", { name: title })).toBeVisible()
+    await expect(page.getByTestId("bookmark-toggle")).toBeVisible()
     await expect(
       page.getByRole("definition").filter({ hasText: "Test User" }),
     ).toBeVisible()
@@ -299,6 +417,8 @@ test.describe("Items empty state", () => {
 
     await page.goto("/items")
 
-    await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "Items", exact: true }),
+    ).toBeVisible()
   })
 })

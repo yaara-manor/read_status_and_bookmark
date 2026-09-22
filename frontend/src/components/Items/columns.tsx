@@ -5,6 +5,7 @@ import type { ItemPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
 import { cn } from "@/lib/utils"
+import { BookmarkToggle } from "./BookmarkToggle"
 import { ItemActionsMenu } from "./ItemActionsMenu"
 
 function CopyId({ id }: { id: string }) {
@@ -80,6 +81,19 @@ export const columns: ColumnDef<ItemPublic>[] = [
       ) : (
         <span className="sr-only">Unread</span>
       ),
+  },
+  {
+    id: "bookmark",
+    header: "Bookmark",
+    cell: ({ row }) => (
+      <div
+        className="flex justify-start"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <BookmarkToggle item={row.original} />
+      </div>
+    ),
   },
   {
     id: "actions",

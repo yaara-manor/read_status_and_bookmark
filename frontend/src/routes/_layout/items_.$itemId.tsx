@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { toast } from "sonner"
 
 import { ItemsService } from "@/client"
+import { BookmarkToggle } from "@/components/Items/BookmarkToggle"
 import { ItemActionsMenu } from "@/components/Items/ItemActionsMenu"
 
 export const Route = createFileRoute("/_layout/items_/$itemId")({
@@ -65,10 +66,13 @@ function ItemPage() {
             {item.description || "No description"}
           </p>
         </div>
-        <ItemActionsMenu
-          item={item}
-          onDeleted={() => navigate({ to: "/items" })}
-        />
+        <div className="flex items-center gap-2">
+          <BookmarkToggle item={item} />
+          <ItemActionsMenu
+            item={item}
+            onDeleted={() => navigate({ to: "/items" })}
+          />
+        </div>
       </div>
       <dl className="grid gap-4 text-sm">
         <div>

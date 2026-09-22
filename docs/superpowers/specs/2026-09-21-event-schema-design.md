@@ -15,6 +15,8 @@
 - `venue_id` and `price` are fixed after create. Updating them would disagree with tickets already issued.
 - Existing item rows are discarded. They have no venue or performer, so they cannot become events.
 
+
+
 ## Schema
 
 ```mermaid
@@ -29,6 +31,8 @@ erDiagram
     user ||--o{ eventbookmarklink : bookmarked
     event ||--o{ eventbookmarklink : bookmarked
 ```
+
+
 
 **venue.** `id`, `city`, `country`, `name` (each string, max 255), `seat_map` (Postgres integer array, required, at least one row). Each entry is that row's seat count and must be at least 1. `[4, 5, 5, 7]` is four rows: widths 4, 5, 5, and 7.
 
@@ -47,19 +51,23 @@ Foreign-key delete behavior:
 - Deleting an event deletes its tickets and its seen and bookmark links.
 - Deleting a venue or a performer is blocked while any event still points at it.
 
+
+
 ## Endpoints
 
 The router moves from `/items` to `/events`. Python models use `Event`, `Venue`, `Performer`, and `Ticket`. Ticket generation is one function shared by create and by seed data.
 
-| Method | Path | Behavior |
-| --- | --- | --- |
-| `GET` | `/events/` | List events, newest `created_at` first. Includes seen and bookmark flags for the current user. Does not embed tickets. |
-| `GET` | `/events/bookmarked` | Current user's bookmarked events. Same shape as the list, including `is_bookmarked: true`. |
-| `GET` | `/events/{id}` | One event. Marks it seen for the current user. Embeds tickets: `id`, `row`, `seat`, `price`, `availability`, `user_id`. |
-| `PUT` | `/events/{id}/bookmark` | Sets or clears the current user's bookmark. Body is `{ "is_bookmarked": bool }`. Returns the list shape, not the ticket list. |
-| `POST` | `/events/` | Creates an event and its tickets. |
-| `PUT` | `/events/{id}` | Updates `name`, `description`, `time`, `performer_id`. Owner or superuser. |
-| `DELETE` | `/events/{id}` | Deletes the event. Owner or superuser. Tickets and links go with it. |
+
+| Method   | Path                    | Behavior                                                                                                                      |
+| -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/events/`              | List events, newest `created_at` first. Includes seen and bookmark flags for the current user. Does not embed tickets.        |
+| `GET`    | `/events/bookmarked`    | Current user's bookmarked events. Same shape as the list, including `is_bookmarked: true`.                                    |
+| `GET`    | `/events/{id}`          | One event. Marks it seen for the current user. Embeds tickets: `id`, `row`, `seat`, `price`, `availability`, `user_id`.       |
+| `PUT`    | `/events/{id}/bookmark` | Sets or clears the current user's bookmark. Body is `{ "is_bookmarked": bool }`. Returns the list shape, not the ticket list. |
+| `POST`   | `/events/`              | Creates an event and its tickets.                                                                                             |
+| `PUT`    | `/events/{id}`          | Updates `name`, `description`, `time`, `performer_id`. Owner or superuser.                                                    |
+| `DELETE` | `/events/{id}`          | Deletes the event. Owner or superuser. Tickets and links go with it.                                                          |
+
 
 **Create body.** `name`, `description`, `venue_id`, `performer_id`, `time`, `price`. `owner_id` is the logged-in user. In the same transaction the handler loads the venue and inserts one ticket per seat:
 
@@ -83,6 +91,8 @@ The router moves from `/items` to `/events`. Python models use `Event`, `Venue`,
 - Update or delete by someone other than the owner or a superuser: 403
 - Missing fields, a negative price, or a bad datetime: 422
 - Venue seat map empty, or containing a width below 1: 400, and no event is created
+
+
 
 ## Migration
 
@@ -119,6 +129,8 @@ Additional cases:
 - A seat map of `[0]` returns 400 and saves no event.
 - Deleting a user deletes the events they own.
 
+
+
 ## Out of scope
 
 - Frontend client, pages, and Playwright tests. They still call `/items` until a later step.
@@ -126,3 +138,4 @@ Additional cases:
 - Venue, performer, and ticket HTTP routes.
 - Editing `venue_id` or `price` after create.
 - Keeping or migrating existing item rows.
+

@@ -1,21 +1,8 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Search } from "lucide-react"
-import { Suspense } from "react"
+import { createFileRoute } from "@tanstack/react-router"
 
 import { ItemsService } from "@/client"
-import { DataTable } from "@/components/Common/DataTable"
 import AddItem from "@/components/Items/AddItem"
-import { columns } from "@/components/Items/columns"
-import PendingItems from "@/components/Pending/PendingItems"
-
-function getItemsQueryOptions() {
-  return {
-    queryFn: async () =>
-      (await ItemsService.readItems({ query: { skip: 0, limit: 100 } })).data,
-    queryKey: ["items"],
-  }
-}
+import { ItemsTable } from "@/components/Items/ItemsTable"
 
 export const Route = createFileRoute("/_layout/items")({
   component: Items,
@@ -28,41 +15,6 @@ export const Route = createFileRoute("/_layout/items")({
   }),
 })
 
-function ItemsTableContent() {
-  const { data: items } = useSuspenseQuery(getItemsQueryOptions())
-  const navigate = useNavigate()
-
-  if (items.data.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center py-12">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <Search className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold">You don't have any items yet</h3>
-        <p className="text-muted-foreground">Add a new item to get started</p>
-      </div>
-    )
-  }
-
-  return (
-    <DataTable
-      columns={columns}
-      data={items.data}
-      onRowClick={(item) =>
-        navigate({ to: "/items/$itemId", params: { itemId: item.id } })
-      }
-    />
-  )
-}
-
-function ItemsTable() {
-  return (
-    <Suspense fallback={<PendingItems />}>
-      <ItemsTableContent />
-    </Suspense>
-  )
-}
-
 function Items() {
   return (
     <div className="flex flex-col gap-6">
@@ -73,7 +25,15 @@ function Items() {
         </div>
         <AddItem />
       </div>
-      <ItemsTable />
+      <ItemsTable
+        queryKey={["items"]}
+        queryFn={async () =>
+          (await ItemsService.readItems({ query: { skip: 0, limit: 100 } }))
+            .data
+        }
+        emptyTitle="You don't have any items yet"
+        emptyDescription="Add a new item to get started"
+      />
     </div>
   )
 }

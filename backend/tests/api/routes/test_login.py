@@ -13,6 +13,10 @@ from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
+def test_pytest_uses_app_test_database() -> None:
+    assert str(settings.DATABASE_URL).rstrip("/").endswith("/app_test")
+
+
 def test_get_access_token(client: TestClient) -> None:
     login_data = {
         "username": settings.FIRST_SUPERUSER,
